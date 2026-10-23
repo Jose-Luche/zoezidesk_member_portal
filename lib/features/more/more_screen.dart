@@ -25,13 +25,25 @@ class MoreScreen extends ConsumerWidget {
         children: [
           if (member != null)
             Card(
-              child: ListTile(
-                leading: const Icon(Icons.person_rounded),
-                title: Text(member.name, style: text.titleMedium),
-                subtitle: Text(
-                  [member.memberNumber, member.gymName].whereType<String>().join(' · '),
-                  style: text.bodySmall,
-                ),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.person_rounded),
+                    title: Text(member.name, style: text.titleMedium),
+                    subtitle: Text(
+                      [member.memberNumber, member.gymName].whereType<String>().join(' · '),
+                      style: text.bodySmall,
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(Routes.profile),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.qr_code_2_rounded),
+                    title: const Text('Membership card'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(Routes.membershipCard),
+                  ),
+                ],
               ),
             ),
           const SizedBox(height: AppSpace.md),

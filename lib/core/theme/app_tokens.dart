@@ -65,6 +65,8 @@ abstract final class AppSizes {
   static const double minTouch = 48;
   static const double icon = 24;
   static const double qrOnCard = 112;
+  static const double qrFullScreen = 264;
+  static const double avatar = 72;
 }
 
 abstract final class AppMotion {

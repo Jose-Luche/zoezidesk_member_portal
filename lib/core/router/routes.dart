@@ -4,11 +4,12 @@ abstract final class Routes {
   static const otp = '/login/otp';
   static const home = '/home';
   static const more = '/more';
+  static const profile = '/profile';
+  static const membershipCard = '/card';
   static const designGallery = '/dev/design';
 
   // Destinations of later features. Until each lands they open a
   // "coming soon" screen, so the dashboard's quick actions already work.
-  static const membershipCard = '/card';
   static const classes = '/classes';
   static const checkIn = '/check-in';
   static const payments = '/payments';

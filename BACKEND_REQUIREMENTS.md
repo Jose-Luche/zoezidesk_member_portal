@@ -70,9 +70,21 @@ Middleware honouring an `Idempotency-Key` header on member write endpoints.
 It stores key, member, route and response for 24 h and replays the stored
 response on a repeat. Needs an additive `api_idempotency_keys` table.
 
-## B3. Profile and attendance ⏳ (Features 4 and 7)
+## B3a. Profile ✅ (Feature 4)
 
-- `GET /api/member/profile`: member details plus active membership.
+Commit `6c6917e` on `mobile-api`. `GET /api/member/profile`
+(`Api\Member\ProfileController`, tests in `ProfileTest.php`). Read-only,
+because the web portal has no profile editing.
+
+Returns: `member` (name, number, phone, email, gender, date_of_birth,
+emergency contact, absolute `photo_url`, status, member_since, updated_at),
+`gym` (name, phone, email, address, town), `memberships` (last 20, newest
+first, with `status` and a date-based `lapsed` flag) and `generated_at`.
+Staff-only columns (`notes`, `id_number`, `group_id`) and the QR payload are
+**not** exposed; a test enforces this.
+
+## B3b. Attendance ⏳ (Feature 7)
+
 - `GET /api/member/attendance?page=`: check-ins, newest first, paginated.
 
 ## B4. Classes ⏳ (Feature 6)
@@ -93,6 +105,34 @@ response on a repeat. Needs an additive `api_idempotency_keys` table.
 
 An optional `?since=<ISO8601>` on list endpoints where it is cheap, so the
 app can fetch only changed rows.
+
+## ⚠️ Bug found: `Member::activeMembership()` can hide an active membership
+
+`app/Models/Member.php` defines
+
+```php
+return $this->hasOne(Membership::class)->where('status', 'active')->latestOfMany();
+```
+
+`latestOfMany()` picks `MAX(id)` across **all** of the member's memberships
+first, and only then applies `status = 'active'`. If the newest row is not
+active (a pending renewal, a suspended or cancelled one, or a back-dated
+import), the relation returns `null` even though an active membership exists.
+I reproduced it on `zoezi_testing` (active membership id 6, expired id 7:
+`activeMembership` was null).
+
+Effects, web and app alike:
+
+- Web dashboard and mobile dashboard: "No active membership".
+- Front-desk scanner (`QrCodeService::validateScan`): "No active membership.
+  Renewal required.", so **check-in is refused**.
+
+Suggested fix (one line, shared model, so not changed without your go-ahead):
+
+```php
+return $this->hasOne(Membership::class)
+    ->ofMany(['id' => 'max'], fn ($q) => $q->where('status', 'active'));
+```
 
 ## Open questions ❓
 

@@ -10,6 +10,8 @@ import '../../features/auth/state/session_controller.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/design_gallery/design_gallery_screen.dart';
 import '../../features/more/more_screen.dart';
+import '../../features/profile/screens/membership_card_screen.dart';
+import '../../features/profile/screens/profile_screen.dart';
 import '../../shared/screens/coming_soon_screen.dart';
 import 'routes.dart';
 
@@ -59,7 +61,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
         ],
       ),
-      _comingSoon(Routes.membershipCard, 'Membership card'),
+      GoRoute(path: Routes.membershipCard, builder: (_, _) => const MembershipCardScreen()),
+      GoRoute(path: Routes.profile, builder: (_, _) => const ProfileScreen()),
       _comingSoon(Routes.classes, 'Classes'),
       _comingSoon(Routes.checkIn, 'Check-in'),
       _comingSoon(Routes.payments, 'Payments'),

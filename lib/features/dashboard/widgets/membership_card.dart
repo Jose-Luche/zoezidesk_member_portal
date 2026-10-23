@@ -5,8 +5,9 @@ import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/formatters.dart';
 import '../state/membership_status.dart';
 
-/// Gradient membership card: the dashboard hero. The QR encodes the exact
-/// `qr_code` string the front-desk scanner matches.
+/// Gradient membership card. Compact on the dashboard (hero element) and
+/// [expanded] on the full-screen card, sharing a Hero tag between the two.
+/// The QR encodes the exact `qr_code` string the front-desk scanner matches.
 class MembershipCard extends StatelessWidget {
   const MembershipCard({
     super.key,
@@ -16,9 +17,9 @@ class MembershipCard extends StatelessWidget {
     this.gymName,
     this.qrCode,
     this.onTap,
+    this.expanded = false,
   });
 
-  /// Shared with the full-screen card for the Hero transition.
   static const heroTag = 'membership-card';
 
   final String name;
@@ -27,12 +28,66 @@ class MembershipCard extends StatelessWidget {
   final String? gymName;
   final String? qrCode;
   final VoidCallback? onTap;
+  final bool expanded;
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final text = Theme.of(context).textTheme;
     final on = p.onCardGradient;
+    final radius = BorderRadius.circular(AppRadius.card);
+
+    final header = Row(
+      children: [
+        Expanded(
+          child: Text(
+            gymName ?? 'ZoeziDesk',
+            style: text.labelLarge?.copyWith(color: on),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        _StatusChip(status: status, color: on),
+      ],
+    );
+    final details = _Details(name: name, memberNumber: memberNumber, status: status, color: on);
+    final progress = status.expiryPercent != null && status.state != MembershipState.none
+        ? Semantics(
+            label: '${status.expiryPercent}% of membership used',
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.control),
+              child: LinearProgressIndicator(
+                value: status.expiryPercent! / 100,
+                minHeight: AppSpace.sm,
+                color: on,
+                backgroundColor: on.withValues(alpha: 0.2),
+              ),
+            ),
+          )
+        : null;
+
+    final List<Widget> children = expanded
+        ? [
+            header,
+            const SizedBox(height: AppSpace.lg),
+            Center(child: _QrTile(qrCode: qrCode, size: AppSizes.qrFullScreen)),
+            const SizedBox(height: AppSpace.lg),
+            details,
+            if (progress != null) ...[const SizedBox(height: AppSpace.md), progress],
+          ]
+        : [
+            header,
+            const SizedBox(height: AppSpace.md),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(child: details),
+                const SizedBox(width: AppSpace.md),
+                _QrTile(qrCode: qrCode, size: AppSizes.qrOnCard),
+              ],
+            ),
+            if (progress != null) ...[const SizedBox(height: AppSpace.md), progress],
+          ];
 
     return Hero(
       tag: heroTag,
@@ -45,55 +100,17 @@ class MembershipCard extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: p.cardGradient,
             ),
-            borderRadius: BorderRadius.circular(AppRadius.card),
+            borderRadius: radius,
           ),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(AppRadius.card),
+            borderRadius: radius,
             child: Padding(
               padding: const EdgeInsets.all(AppSpace.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          gymName ?? 'ZoeziDesk',
-                          style: text.labelLarge?.copyWith(color: on),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      _StatusChip(status: status, color: on),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpace.md),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(child: _Details(name: name, memberNumber: memberNumber, status: status, color: on)),
-                      const SizedBox(width: AppSpace.md),
-                      _QrTile(qrCode: qrCode),
-                    ],
-                  ),
-                  if (status.expiryPercent != null &&
-                      status.state != MembershipState.none) ...[
-                    const SizedBox(height: AppSpace.md),
-                    Semantics(
-                      label: '${status.expiryPercent}% of membership used',
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.control),
-                        child: LinearProgressIndicator(
-                          value: status.expiryPercent! / 100,
-                          minHeight: AppSpace.sm,
-                          color: on,
-                          backgroundColor: on.withValues(alpha: 0.2),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+                mainAxisSize: MainAxisSize.min,
+                children: children,
               ),
             ),
           ),
@@ -190,17 +207,18 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _QrTile extends StatelessWidget {
-  const _QrTile({required this.qrCode});
+  const _QrTile({required this.qrCode, required this.size});
 
   final String? qrCode;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     return Container(
-      width: AppSizes.qrOnCard,
-      height: AppSizes.qrOnCard,
-      padding: const EdgeInsets.all(AppSpace.sm),
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(size > AppSizes.qrOnCard ? AppSpace.md : AppSpace.sm),
       decoration: BoxDecoration(
         color: p.qrBackground,
         borderRadius: BorderRadius.circular(AppRadius.control),
@@ -209,6 +227,7 @@ class _QrTile extends StatelessWidget {
           ? Icon(Icons.qr_code_2_rounded, size: AppSpace.xxl, color: p.onCardGradient)
           : Semantics(
               label: 'Membership QR code',
+              image: true,
               child: QrImageView(
                 data: qrCode!,
                 errorCorrectionLevel: QrErrorCorrectLevel.H,

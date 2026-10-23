@@ -85,6 +85,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(firstName == null ? 'Home' : 'Hi, $firstName'),
+        actions: [
+          IconButton(
+            tooltip: 'Profile',
+            icon: const Icon(Icons.account_circle_rounded),
+            onPressed: () => context.push(Routes.profile),
+          ),
+        ],
       ),
       body: body,
     );

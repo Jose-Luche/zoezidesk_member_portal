@@ -1980,6 +1980,258 @@ class SyncMetaCompanion extends UpdateCompanion<SyncMetaData> {
   }
 }
 
+class $AttendancesTable extends Attendances
+    with TableInfo<$AttendancesTable, Attendance> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AttendancesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _checkedInAtMeta = const VerificationMeta(
+    'checkedInAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> checkedInAt = GeneratedColumn<DateTime>(
+    'checked_in_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _methodMeta = const VerificationMeta('method');
+  @override
+  late final GeneratedColumn<String> method = GeneratedColumn<String>(
+    'method',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, checkedInAt, method];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'attendances';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Attendance> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('checked_in_at')) {
+      context.handle(
+        _checkedInAtMeta,
+        checkedInAt.isAcceptableOrUnknown(
+          data['checked_in_at']!,
+          _checkedInAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_checkedInAtMeta);
+    }
+    if (data.containsKey('method')) {
+      context.handle(
+        _methodMeta,
+        method.isAcceptableOrUnknown(data['method']!, _methodMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_methodMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Attendance map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Attendance(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      checkedInAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}checked_in_at'],
+      )!,
+      method: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}method'],
+      )!,
+    );
+  }
+
+  @override
+  $AttendancesTable createAlias(String alias) {
+    return $AttendancesTable(attachedDatabase, alias);
+  }
+}
+
+class Attendance extends DataClass implements Insertable<Attendance> {
+  final int id;
+  final DateTime checkedInAt;
+
+  /// qr or manual
+  final String method;
+  const Attendance({
+    required this.id,
+    required this.checkedInAt,
+    required this.method,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['checked_in_at'] = Variable<DateTime>(checkedInAt);
+    map['method'] = Variable<String>(method);
+    return map;
+  }
+
+  AttendancesCompanion toCompanion(bool nullToAbsent) {
+    return AttendancesCompanion(
+      id: Value(id),
+      checkedInAt: Value(checkedInAt),
+      method: Value(method),
+    );
+  }
+
+  factory Attendance.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Attendance(
+      id: serializer.fromJson<int>(json['id']),
+      checkedInAt: serializer.fromJson<DateTime>(json['checkedInAt']),
+      method: serializer.fromJson<String>(json['method']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'checkedInAt': serializer.toJson<DateTime>(checkedInAt),
+      'method': serializer.toJson<String>(method),
+    };
+  }
+
+  Attendance copyWith({int? id, DateTime? checkedInAt, String? method}) =>
+      Attendance(
+        id: id ?? this.id,
+        checkedInAt: checkedInAt ?? this.checkedInAt,
+        method: method ?? this.method,
+      );
+  Attendance copyWithCompanion(AttendancesCompanion data) {
+    return Attendance(
+      id: data.id.present ? data.id.value : this.id,
+      checkedInAt: data.checkedInAt.present
+          ? data.checkedInAt.value
+          : this.checkedInAt,
+      method: data.method.present ? data.method.value : this.method,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Attendance(')
+          ..write('id: $id, ')
+          ..write('checkedInAt: $checkedInAt, ')
+          ..write('method: $method')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, checkedInAt, method);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Attendance &&
+          other.id == this.id &&
+          other.checkedInAt == this.checkedInAt &&
+          other.method == this.method);
+}
+
+class AttendancesCompanion extends UpdateCompanion<Attendance> {
+  final Value<int> id;
+  final Value<DateTime> checkedInAt;
+  final Value<String> method;
+  const AttendancesCompanion({
+    this.id = const Value.absent(),
+    this.checkedInAt = const Value.absent(),
+    this.method = const Value.absent(),
+  });
+  AttendancesCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime checkedInAt,
+    required String method,
+  }) : checkedInAt = Value(checkedInAt),
+       method = Value(method);
+  static Insertable<Attendance> custom({
+    Expression<int>? id,
+    Expression<DateTime>? checkedInAt,
+    Expression<String>? method,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (checkedInAt != null) 'checked_in_at': checkedInAt,
+      if (method != null) 'method': method,
+    });
+  }
+
+  AttendancesCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? checkedInAt,
+    Value<String>? method,
+  }) {
+    return AttendancesCompanion(
+      id: id ?? this.id,
+      checkedInAt: checkedInAt ?? this.checkedInAt,
+      method: method ?? this.method,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (checkedInAt.present) {
+      map['checked_in_at'] = Variable<DateTime>(checkedInAt.value);
+    }
+    if (method.present) {
+      map['method'] = Variable<String>(method.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AttendancesCompanion(')
+          ..write('id: $id, ')
+          ..write('checkedInAt: $checkedInAt, ')
+          ..write('method: $method')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1989,6 +2241,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ClassSessionsTable classSessions = $ClassSessionsTable(this);
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $SyncMetaTable syncMeta = $SyncMetaTable(this);
+  late final $AttendancesTable attendances = $AttendancesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1998,6 +2251,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     classSessions,
     outbox,
     syncMeta,
+    attendances,
   ];
 }
 
@@ -3040,6 +3294,173 @@ typedef $$SyncMetaTableProcessedTableManager =
       SyncMetaData,
       PrefetchHooks Function()
     >;
+typedef $$AttendancesTableCreateCompanionBuilder =
+    AttendancesCompanion Function({
+      Value<int> id,
+      required DateTime checkedInAt,
+      required String method,
+    });
+typedef $$AttendancesTableUpdateCompanionBuilder =
+    AttendancesCompanion Function({
+      Value<int> id,
+      Value<DateTime> checkedInAt,
+      Value<String> method,
+    });
+
+class $$AttendancesTableFilterComposer
+    extends Composer<_$AppDatabase, $AttendancesTable> {
+  $$AttendancesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get checkedInAt => $composableBuilder(
+    column: $table.checkedInAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get method => $composableBuilder(
+    column: $table.method,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AttendancesTableOrderingComposer
+    extends Composer<_$AppDatabase, $AttendancesTable> {
+  $$AttendancesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get checkedInAt => $composableBuilder(
+    column: $table.checkedInAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get method => $composableBuilder(
+    column: $table.method,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AttendancesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AttendancesTable> {
+  $$AttendancesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get checkedInAt => $composableBuilder(
+    column: $table.checkedInAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get method =>
+      $composableBuilder(column: $table.method, builder: (column) => column);
+}
+
+class $$AttendancesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AttendancesTable,
+          Attendance,
+          $$AttendancesTableFilterComposer,
+          $$AttendancesTableOrderingComposer,
+          $$AttendancesTableAnnotationComposer,
+          $$AttendancesTableCreateCompanionBuilder,
+          $$AttendancesTableUpdateCompanionBuilder,
+          (
+            Attendance,
+            BaseReferences<_$AppDatabase, $AttendancesTable, Attendance>,
+          ),
+          Attendance,
+          PrefetchHooks Function()
+        > {
+  $$AttendancesTableTableManager(_$AppDatabase db, $AttendancesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AttendancesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AttendancesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AttendancesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> checkedInAt = const Value.absent(),
+                Value<String> method = const Value.absent(),
+              }) => AttendancesCompanion(
+                id: id,
+                checkedInAt: checkedInAt,
+                method: method,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime checkedInAt,
+                required String method,
+              }) => AttendancesCompanion.insert(
+                id: id,
+                checkedInAt: checkedInAt,
+                method: method,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AttendancesTable, Attendance>(table),
+                  BaseReferences<_$AppDatabase, $AttendancesTable, Attendance>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AttendancesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AttendancesTable,
+      Attendance,
+      $$AttendancesTableFilterComposer,
+      $$AttendancesTableOrderingComposer,
+      $$AttendancesTableAnnotationComposer,
+      $$AttendancesTableCreateCompanionBuilder,
+      $$AttendancesTableUpdateCompanionBuilder,
+      (
+        Attendance,
+        BaseReferences<_$AppDatabase, $AttendancesTable, Attendance>,
+      ),
+      Attendance,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3052,4 +3473,6 @@ class $AppDatabaseManager {
       $$OutboxTableTableManager(_db, _db.outbox);
   $$SyncMetaTableTableManager get syncMeta =>
       $$SyncMetaTableTableManager(_db, _db.syncMeta);
+  $$AttendancesTableTableManager get attendances =>
+      $$AttendancesTableTableManager(_db, _db.attendances);
 }

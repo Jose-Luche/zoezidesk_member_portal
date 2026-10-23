@@ -61,6 +61,18 @@ class Outbox extends Table {
   DateTimeColumn get updatedAt => dateTime()();
 }
 
+/// The member's check-ins (recorded by the front desk), newest first.
+class Attendances extends Table {
+  IntColumn get id => integer()();
+  DateTimeColumn get checkedInAt => dateTime()();
+
+  /// qr or manual
+  TextColumn get method => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 /// When each cached list was last refreshed from the server.
 class SyncMeta extends Table {
   TextColumn get key => text()();
@@ -70,13 +82,13 @@ class SyncMeta extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [CachedDocuments, ClassSessions, Outbox, SyncMeta])
+@DriftDatabase(tables: [CachedDocuments, ClassSessions, Outbox, SyncMeta, Attendances])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
       : super(executor ?? driftDatabase(name: 'zoezi_member'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -87,6 +99,8 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(outbox);
             await m.createTable(syncMeta);
           }
+          // v3 adds the check-in history table.
+          if (from < 3) await m.createTable(attendances);
         },
       );
 

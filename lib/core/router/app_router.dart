@@ -9,6 +9,7 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/state/session_controller.dart';
 import '../../features/builder/screens/builder_screen.dart';
 import '../../features/builder/screens/workout_result_screen.dart';
+import '../../features/checkin/screens/checkin_screen.dart';
 import '../../features/classes/screens/classes_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/design_gallery/design_gallery_screen.dart';
@@ -81,7 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'edit', builder: (_, _) => const EditProfileScreen()),
         ],
       ),
-      _comingSoon(Routes.checkIn, 'Check-in'),
+      GoRoute(path: Routes.checkIn, builder: (_, _) => const CheckInScreen()),
       _comingSoon(Routes.payments, 'Payments'),
       if (kDebugMode)
         GoRoute(

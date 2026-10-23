@@ -9,8 +9,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:zoezidesk_member/core/network/dio_client.dart';
 import 'package:zoezidesk_member/core/network/retry_interceptor.dart';
 import 'package:zoezidesk_member/core/storage/local_data_wiper.dart';
+import 'package:zoezidesk_member/core/utils/brightness.dart';
 import 'package:zoezidesk_member/core/storage/session_storage.dart';
 import 'package:zoezidesk_member/core/utils/clock.dart';
+import 'package:zoezidesk_member/data/api/attendance_api.dart';
 import 'package:zoezidesk_member/data/api/auth_api.dart';
 import 'package:zoezidesk_member/data/api/builder_api.dart';
 import 'package:zoezidesk_member/data/api/classes_api.dart';
@@ -18,6 +20,7 @@ import 'package:zoezidesk_member/data/api/dashboard_api.dart';
 import 'package:zoezidesk_member/data/api/profile_api.dart';
 import 'package:zoezidesk_member/data/db/app_database.dart';
 import 'package:zoezidesk_member/data/sync/sync.dart';
+import 'package:zoezidesk_member/features/checkin/state/checkin_providers.dart';
 
 import 'fakes.dart';
 
@@ -28,6 +31,18 @@ class MockProfileApi extends Mock implements ProfileApi {}
 class MockBuilderApi extends Mock implements BuilderApi {}
 
 class MockClassesApi extends Mock implements ClassesApi {}
+
+class MockAttendanceApi extends Mock implements AttendanceApi {}
+
+class FakeBrightness implements BrightnessControl {
+  final calls = <String>[];
+
+  @override
+  Future<void> boost() async => calls.add('boost');
+
+  @override
+  Future<void> restore() async => calls.add('restore');
+}
 
 AppDatabase memoryDatabase() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -52,6 +67,8 @@ class TestEnv {
   final profileApi = MockProfileApi();
   final builderApi = MockBuilderApi();
   final classesApi = MockClassesApi();
+  final attendanceApi = MockAttendanceApi();
+  final brightness = FakeBrightness();
 
   /// HTTP for code that uses dio directly (the outbox).
   final http = FakeAdapter();
@@ -66,6 +83,11 @@ class TestEnv {
         profileApiProvider.overrideWithValue(profileApi),
         builderApiProvider.overrideWithValue(builderApi),
         classesApiProvider.overrideWithValue(classesApi),
+        attendanceApiProvider.overrideWithValue(attendanceApi),
+        brightnessControlProvider.overrideWithValue(brightness),
+        checkInPollingProvider.overrideWithValue(
+          (every: const Duration(seconds: 1), upTo: const Duration(seconds: 30)),
+        ),
         connectivityChangesProvider.overrideWithValue(connectivity.stream),
         dioProvider.overrideWith((ref) {
           final dio = Dio(BaseOptions(baseUrl: 'https://api.test'));
@@ -270,6 +292,24 @@ Map<String, dynamic> classJson(
       'spots_left': spotsLeft,
       'is_full': spotsLeft == 0,
       'my_booking': booked ? 'booked' : null,
+    };
+
+Map<String, dynamic> attendanceJson(
+  List<(int id, DateTime at, String method)> rows, {
+  int page = 1,
+  int lastPage = 1,
+  int thisMonth = 4,
+}) =>
+    {
+      'data': [
+        for (final (id, at, method) in rows)
+          {'id': id, 'checked_in_at': at.toIso8601String(), 'method': method},
+      ],
+      'meta': {'current_page': page, 'last_page': lastPage, 'per_page': 20, 'total': rows.length},
+      'summary': {
+        'this_month': thisMonth,
+        'last_visit': rows.isEmpty ? null : rows.first.$2.toIso8601String(),
+      },
     };
 
 const testCardJson = {

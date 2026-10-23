@@ -153,9 +153,13 @@ summary.
 `route('member.workout-templates.import')`, which does not exist, so it
 throws. Nothing uses it (the web has no share UI).
 
-## B3b. Attendance ⏳ (Feature 7)
+## B3b. Attendance ✅ (Feature 7)
 
-- `GET /api/member/attendance?page=`: check-ins, newest first, paginated.
+Commit `93451b3` on `mobile-api`. `GET /api/member/attendance?page=`
+(`Api\Member\AttendanceController`, tests in `AttendanceTest.php`): the
+member's own check-ins, newest first, 20 per page, with `meta` (pages,
+total) and `summary` (`this_month`, `last_visit`). Read-only: check-ins are
+still recorded only by the front-desk QR scan.
 
 ## B4. Classes ✅ (Feature 6)
 

@@ -123,12 +123,21 @@ Commit `fb4f8f8` on `mobile-api` (`Member\GuidedWorkoutController`, which only
 - `generate` and `swap-exercise` responses gain `plateau`, `order`, `status`,
   `template_name` and `session_id`.
 
-**⚠️ Prompt interpreter model is retired.** `WorkoutPromptInterpreterService`
-calls Anthropic with `claude-3-5-sonnet-20241022`, which is no longer
-available, so "Describe it" fails on both the web and the app. The app shows
-"Could not understand that description. Try the step-by-step form." The
-service is shared with the web, so it is not changed; it needs a current
-model ID and `ANTHROPIC_API_KEY` set.
+**✅ Prompt interpreter fixed** (commit `fc329ea`). It never worked: it used a
+class from a package that was not installed, read the key with `env()`
+(null once `config:cache` runs), called the retired
+`claude-3-5-sonnet-20241022`, and read `content[0]`. Now:
+
+- the official `anthropic-ai/sdk` (v1.2) with `Anthropic\Client`
+- model `claude-opus-5-5` by default, changeable with `ANTHROPIC_WORKOUT_MODEL`
+- structured output (JSON schema), `effort: low`, server-side refusal fallback
+- result clamped to values the builder accepts; clear error when the key is missing
+
+**To switch it on:** set `ANTHROPIC_API_KEY` in the server's `.env`, then run
+`php artisan config:clear` (or `config:cache`). Until then "Describe it"
+falls back to the step-by-step form, as it does today. Each use is billed
+by Anthropic to the key's account. See the cost note in the Feature 5
+summary.
 
 **Also noticed, not changed:** `shareTemplate` builds a URL with
 `route('member.workout-templates.import')`, which does not exist, so it
@@ -157,33 +166,18 @@ throws. Nothing uses it (the web has no share UI).
 An optional `?since=<ISO8601>` on list endpoints where it is cheap, so the
 app can fetch only changed rows.
 
-## ⚠️ Bug found: `Member::activeMembership()` can hide an active membership
+## ✅ Fixed: `Member::activeMembership()` hid active memberships
 
-`app/Models/Member.php` defines
+Commit `d551e29` on `mobile-api` (shared model, fixed with your approval;
+tests in `tests/Feature/MemberActiveMembershipTest.php`).
 
-```php
-return $this->hasOne(Membership::class)->where('status', 'active')->latestOfMany();
-```
-
-`latestOfMany()` picks `MAX(id)` across **all** of the member's memberships
-first, and only then applies `status = 'active'`. If the newest row is not
-active (a pending renewal, a suspended or cancelled one, or a back-dated
-import), the relation returns `null` even though an active membership exists.
-I reproduced it on `zoezi_testing` (active membership id 6, expired id 7:
-`activeMembership` was null).
-
-Effects, web and app alike:
-
-- Web dashboard and mobile dashboard: "No active membership".
-- Front-desk scanner (`QrCodeService::validateScan`): "No active membership.
-  Renewal required.", so **check-in is refused**.
-
-Suggested fix (one line, shared model, so not changed without your go-ahead):
-
-```php
-return $this->hasOne(Membership::class)
-    ->ofMany(['id' => 'max'], fn ($q) => $q->where('status', 'active'));
-```
+`->where('status', 'active')->latestOfMany()` took `MAX(id)` over all
+memberships before filtering, so any newer non-active row (pending renewal,
+expired, cancelled, suspended) made the relation null. The web and app
+dashboards then showed "No active membership", and the front-desk scanner
+refused check-in. It now uses
+`->ofMany(['id' => 'max'], fn ($q) => $q->where('status', 'active'))`, the
+newest *active* membership. Eager loading and `whereHas` are covered by tests.
 
 ## Open questions ❓
 

@@ -14,10 +14,10 @@ import '../../features/classes/screens/classes_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/design_gallery/design_gallery_screen.dart';
 import '../../features/more/more_screen.dart';
+import '../../features/payments/screens/payments_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/profile/screens/membership_card_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
-import '../../shared/screens/coming_soon_screen.dart';
 import 'routes.dart';
 
 /// Guard rules, kept pure so they can be unit tested.
@@ -30,9 +30,6 @@ String? authRedirect(SessionState session, String location) {
       onPublic || location == Routes.splash ? Routes.home : null,
   };
 }
-
-GoRoute _comingSoon(String path, String title) =>
-    GoRoute(path: path, builder: (_, _) => ComingSoonScreen(title: title));
 
 final routerProvider = Provider<GoRouter>((ref) {
   final session = ValueNotifier<SessionState>(ref.read(sessionControllerProvider));
@@ -83,7 +80,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(path: Routes.checkIn, builder: (_, _) => const CheckInScreen()),
-      _comingSoon(Routes.payments, 'Payments'),
+      GoRoute(path: Routes.payments, builder: (_, _) => const PaymentsScreen()),
       if (kDebugMode)
         GoRoute(
           path: Routes.designGallery,

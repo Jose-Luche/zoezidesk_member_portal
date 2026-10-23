@@ -165,14 +165,14 @@ void main() {
     env.dashboardReturns(dashboardJson());
     await pumpApp(tester);
 
-    // Payments is not built yet: it opens the coming-soon screen.
+    when(() => env.paymentsApi.page(any())).thenAnswer((_) async => paymentsJson([]));
     final payments = find.descendant(of: find.byType(Card), matching: find.text('Payments'));
     await tester.scrollUntilVisible(payments, 200, scrollable: find.byType(Scrollable).first);
     await tester.ensureVisible(payments);
     await tester.pumpAndSettle();
     await tester.tap(payments);
     await tester.pumpAndSettle();
-    expect(find.text('Coming soon'), findsOneWidget);
+    expect(find.text('No payments yet'), findsOneWidget);
   });
 
   testWidgets('logout from More wipes the cached dashboard', (tester) async {

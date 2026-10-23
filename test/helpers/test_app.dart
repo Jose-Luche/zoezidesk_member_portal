@@ -12,11 +12,13 @@ import 'package:zoezidesk_member/core/storage/local_data_wiper.dart';
 import 'package:zoezidesk_member/core/utils/brightness.dart';
 import 'package:zoezidesk_member/core/storage/session_storage.dart';
 import 'package:zoezidesk_member/core/utils/clock.dart';
+import 'package:zoezidesk_member/core/utils/url_opener.dart';
 import 'package:zoezidesk_member/data/api/attendance_api.dart';
 import 'package:zoezidesk_member/data/api/auth_api.dart';
 import 'package:zoezidesk_member/data/api/builder_api.dart';
 import 'package:zoezidesk_member/data/api/classes_api.dart';
 import 'package:zoezidesk_member/data/api/dashboard_api.dart';
+import 'package:zoezidesk_member/data/api/payments_api.dart';
 import 'package:zoezidesk_member/data/api/profile_api.dart';
 import 'package:zoezidesk_member/data/db/app_database.dart';
 import 'package:zoezidesk_member/data/sync/sync.dart';
@@ -33,6 +35,8 @@ class MockBuilderApi extends Mock implements BuilderApi {}
 class MockClassesApi extends Mock implements ClassesApi {}
 
 class MockAttendanceApi extends Mock implements AttendanceApi {}
+
+class MockPaymentsApi extends Mock implements PaymentsApi {}
 
 class FakeBrightness implements BrightnessControl {
   final calls = <String>[];
@@ -68,6 +72,11 @@ class TestEnv {
   final builderApi = MockBuilderApi();
   final classesApi = MockClassesApi();
   final attendanceApi = MockAttendanceApi();
+  final paymentsApi = MockPaymentsApi();
+
+  /// Links the app asked the phone to open; [openUrlResult] is the answer.
+  final openedUrls = <Uri>[];
+  bool openUrlResult = true;
   final brightness = FakeBrightness();
 
   /// HTTP for code that uses dio directly (the outbox).
@@ -84,6 +93,11 @@ class TestEnv {
         builderApiProvider.overrideWithValue(builderApi),
         classesApiProvider.overrideWithValue(classesApi),
         attendanceApiProvider.overrideWithValue(attendanceApi),
+        paymentsApiProvider.overrideWithValue(paymentsApi),
+        urlOpenerProvider.overrideWithValue((url) async {
+          openedUrls.add(url);
+          return openUrlResult;
+        }),
         brightnessControlProvider.overrideWithValue(brightness),
         checkInPollingProvider.overrideWithValue(
           (every: const Duration(seconds: 1), upTo: const Duration(seconds: 30)),
@@ -318,3 +332,39 @@ const testCardJson = {
   'name': 'Jane Wanjiru',
   'gym_name': 'Test Gym',
 };
+
+/// One payment row as the API returns it.
+Map<String, dynamic> paymentJson(
+  int id, {
+  int amount = 3000,
+  String status = 'completed',
+  DateTime? paidAt,
+  String? receipt,
+  String method = 'mpesa',
+  String? plan = 'Monthly',
+}) =>
+    {
+      'id': id,
+      'amount': amount,
+      'method': method,
+      'status': status,
+      'receipt': receipt,
+      'plan': plan,
+      'paid_at': paidAt?.toIso8601String(),
+      'created_at': testNow.toIso8601String(),
+      'has_receipt_pdf': status == 'completed',
+    };
+
+Map<String, dynamic> paymentsJson(
+  List<Map<String, dynamic>> rows, {
+  int page = 1,
+  int lastPage = 1,
+  int totalPaid = 0,
+  int? total,
+}) =>
+    {
+      'data': rows,
+      'meta': {'current_page': page, 'last_page': lastPage, 'per_page': 10, 'total': total ?? rows.length},
+      'total_paid': totalPaid,
+      'generated_at': testNow.toIso8601String(),
+    };

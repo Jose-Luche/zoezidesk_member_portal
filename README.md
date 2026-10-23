@@ -72,6 +72,9 @@ Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
   change failed with the server's reason. Connectivity is only a hint; a
   failed request is the real signal.
 - Live class spot counts are shown only while online.
+- Payment history is cached with amounts and receipts encrypted. Receipt
+  PDFs open in the browser through a 10-minute signed link, so they need a
+  connection; the app never puts its token in a URL.
 - Android auto-backup is off so the database never leaves the device
   without its key.
 

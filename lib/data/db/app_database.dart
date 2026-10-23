@@ -73,6 +73,18 @@ class Attendances extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// Payment history, newest first. Amount, receipt, plan and method are
+/// AES-GCM encrypted in [payload]; status and dates stay clear for ordering.
+class Payments extends Table {
+  IntColumn get id => integer()();
+  TextColumn get status => text()();
+  DateTimeColumn get paidAt => dateTime().nullable()();
+  BlobColumn get payload => blob()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 /// When each cached list was last refreshed from the server.
 class SyncMeta extends Table {
   TextColumn get key => text()();
@@ -82,13 +94,13 @@ class SyncMeta extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [CachedDocuments, ClassSessions, Outbox, SyncMeta, Attendances])
+@DriftDatabase(tables: [CachedDocuments, ClassSessions, Outbox, SyncMeta, Attendances, Payments])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
       : super(executor ?? driftDatabase(name: 'zoezi_member'));
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -101,6 +113,8 @@ class AppDatabase extends _$AppDatabase {
           }
           // v3 adds the check-in history table.
           if (from < 3) await m.createTable(attendances);
+          // v4 adds the payment history table.
+          if (from < 4) await m.createTable(payments);
         },
       );
 

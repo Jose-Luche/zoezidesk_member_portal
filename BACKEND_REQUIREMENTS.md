@@ -188,11 +188,33 @@ needed for queued offline bookings or fixing a web bug:
 
 The web rebooking failure is a web bug and is not changed here.
 
-## B5. Payments ⏳ (Feature 8)
+## B5. Payments ✅ (Feature 8, commit `a00e2f2`)
 
-- `GET /api/member/payments?page=`: 10 per page, same query as the web
-  `PaymentHistory`.
-- `GET /api/member/payments/{id}/receipt`: PDF via `ReceiptPdfService`.
+Read-only, as on the web `PaymentHistory` page (members pay at the front desk).
+
+- `GET /api/member/payments?page=`: every payment of the member (completed,
+  pending, failed), ordered by `paid_at` desc then `id` desc, 10 per page.
+  Items: `id`, `amount` (whole KES), `method`, `status`, `receipt` (M-Pesa
+  receipt), `plan`, `paid_at` and `created_at` (ISO 8601, `paid_at` null while
+  pending), `has_receipt_pdf` (completed only). Also `meta`
+  (`current_page`, `last_page`, `per_page`, `total`), `total_paid` (sum of
+  completed payments across all pages) and `generated_at`.
+- `POST /api/member/payments/{id}/receipt-link`: returns `{url, expires_at}`,
+  a temporary signed URL valid for 10 minutes. 404 if the payment is not the
+  member's, 422 if it is not completed.
+- `GET /api/member/receipts/{payment}` (route `api.member.receipt-pdf`):
+  `signed` middleware, no token, so the phone's browser can open it. Streams
+  the PDF from the existing `ReceiptPdfService` inline with
+  `Cache-Control: private, no-store`. Tampered or expired links get 403.
+
+Why a signed link instead of the planned `GET /payments/{id}/receipt`: the app
+hands the PDF to the browser, which cannot send the bearer token, and the
+token must never appear in a URL. The web keeps its own `member.receipt`
+route; it is unchanged.
+
+The app caches the history in the `Payments` table (schema v4, additive)
+with amount, receipt, plan and method encrypted. Receipt links are online
+only and fetched fresh on every tap.
 
 ## B6. `changes_since` ⏳
 

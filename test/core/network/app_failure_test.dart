@@ -12,14 +12,22 @@ DioException _response(int status, Object? body) {
 }
 
 void main() {
-  test('timeouts and connection errors are network failures', () {
+  test('failing to connect is a network (offline) failure', () {
     for (final type in [
       DioExceptionType.connectionTimeout,
-      DioExceptionType.receiveTimeout,
       DioExceptionType.connectionError,
     ]) {
       final e = DioException(requestOptions: RequestOptions(), type: type);
       expect(mapDioException(e), isA<NetworkFailure>());
+    }
+  });
+
+  test('a slow response is a timeout, not offline', () {
+    for (final type in [DioExceptionType.receiveTimeout, DioExceptionType.sendTimeout]) {
+      final f = mapDioException(DioException(requestOptions: RequestOptions(), type: type));
+      expect(f, isA<TimeoutFailure>());
+      expect(f, isNot(isA<NetworkFailure>()));
+      expect(f.message, contains('taking too long'));
     }
   });
 

@@ -72,16 +72,33 @@ response on a repeat. Needs an additive `api_idempotency_keys` table.
 
 ## B3a. Profile ✅ (Feature 4)
 
-Commit `6c6917e` on `mobile-api`. `GET /api/member/profile`
-(`Api\Member\ProfileController`, tests in `ProfileTest.php`). Read-only,
-because the web portal has no profile editing.
+Commits `6c6917e` and `7b67fa2` on `mobile-api`
+(`Api\Member\ProfileController`, tests in `ProfileTest.php`).
 
-Returns: `member` (name, number, phone, email, gender, date_of_birth,
-emergency contact, absolute `photo_url`, status, member_since, updated_at),
-`gym` (name, phone, email, address, town), `memberships` (last 20, newest
-first, with `status` and a date-based `lapsed` flag) and `generated_at`.
+`GET /api/member/profile` returns `member` (name, number, phone, email,
+gender, date_of_birth, emergency contact, absolute `photo_url`, status,
+member_since, updated_at), `gym` (name, phone, email, address, town),
+`memberships` (last 20, newest first, with `status` and a date-based
+`lapsed` flag) and `generated_at`.
+
+`PATCH /api/member/profile` lets a member edit their own:
+
+| Editable from the app | Front desk only |
+|---|---|
+| email, gender, date_of_birth (`Y-m-d`, in the past), emergency_contact_name, emergency_contact_phone | name, phone (the OTP login identity), photo, status, and every staff-only column |
+
+Only the fields sent change, and `null` clears one. Last write wins (server
+wins in the app). Returns the same body as `GET`; `422` carries per-field
+errors. Unknown or protected fields in the request are ignored; a test
+enforces this. Each change is logged with the field names, not the values.
+
 Staff-only columns (`notes`, `id_number`, `group_id`) and the QR payload are
-**not** exposed; a test enforces this.
+never exposed.
+
+**Business rule to confirm:** I chose which fields are editable. Phone stays
+with the front desk because changing it changes how the member logs in.
+Name and photo stay because staff use them to identify members at
+check-in.
 
 ## B3b. Attendance ⏳ (Feature 7)
 

@@ -13,10 +13,19 @@ sealed class AppFailure implements Exception {
   String toString() => '$runtimeType: $message';
 }
 
-/// No connection, DNS failure or timeout. The request may be retried later.
+/// No connection or DNS failure: the phone is offline. Screens show their
+/// offline state and cached data.
 class NetworkFailure extends AppFailure {
   const NetworkFailure([
     super.message = 'You appear to be offline. Check your connection and try again.',
+  ]);
+}
+
+/// Connected, but the server did not answer in time. Not "offline": the
+/// member should simply try again.
+class TimeoutFailure extends AppFailure {
+  const TimeoutFailure([
+    super.message = 'The server is taking too long to respond. Please try again.',
   ]);
 }
 
@@ -51,11 +60,13 @@ const _genericMessage = 'Something went wrong. Please try again.';
 AppFailure mapDioException(DioException e) {
   switch (e.type) {
     case DioExceptionType.connectionTimeout:
+    case DioExceptionType.connectionError:
+      // Could not connect at all.
+      return const NetworkFailure();
     case DioExceptionType.sendTimeout:
     case DioExceptionType.receiveTimeout:
     case DioExceptionType.transformTimeout:
-    case DioExceptionType.connectionError:
-      return const NetworkFailure();
+      return const TimeoutFailure();
     case DioExceptionType.badResponse:
       return _fromResponse(e.response);
     case DioExceptionType.unknown:

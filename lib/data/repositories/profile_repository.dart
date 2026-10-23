@@ -32,6 +32,19 @@ class ProfileRepository {
     });
     await _cache.put(profileKey, json, _clock());
   }
+
+  /// Online only. Sends [changes] (snake_case field → value, null clears)
+  /// and caches the server's response, so the server always wins.
+  /// Throws [AppFailure]; [ValidationFailure.fieldErrors] is keyed by field.
+  Future<ProfileDto> update(Map<String, Object?> changes) async {
+    final json = await guardRequest(() async {
+      final json = await _api.update(changes);
+      ProfileDto.fromJson(json);
+      return json;
+    });
+    await _cache.put(profileKey, json, _clock());
+    return ProfileDto.fromJson(json);
+  }
 }
 
 final profileRepositoryProvider = Provider<ProfileRepository>(

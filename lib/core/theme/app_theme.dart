@@ -234,6 +234,7 @@ abstract final class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: p.surfaceHigh,
         selectedColor: p.accentTint,
+        checkmarkColor: p.accentText,
         side: BorderSide(color: p.border),
         labelStyle: text.labelLarge?.copyWith(color: p.text),
         shape: const RoundedRectangleBorder(

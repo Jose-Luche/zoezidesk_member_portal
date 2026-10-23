@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/formatters.dart';
@@ -58,7 +60,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body = const _ProfileSkeleton();
     }
 
-    return Scaffold(appBar: AppBar(title: const Text('Profile')), body: body);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: [
+          if (cached != null)
+            IconButton(
+              tooltip: 'Edit profile',
+              icon: const Icon(Icons.edit_rounded),
+              onPressed: () => context.push(Routes.editProfile),
+            ),
+        ],
+      ),
+      body: body,
+    );
   }
 }
 
@@ -157,8 +172,8 @@ class _ProfileContent extends StatelessWidget {
               ),
             ]),
           const InfoBanner(
-            message: 'To change your details, contact the front desk.',
-            icon: Icons.edit_note_rounded,
+            message: 'Name, phone number and photo can only be changed at the front desk.',
+            icon: Icons.storefront_rounded,
           ),
           const SizedBox(height: AppSpace.lg),
         ],

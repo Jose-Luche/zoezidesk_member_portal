@@ -111,7 +111,7 @@ void main() {
       expect(find.text('13 Oct 2026 – 12 Nov 2026'), findsOneWidget);
       expect(find.text('Expired'), findsOneWidget); // lapsed record
 
-      final note = find.text('To change your details, contact the front desk.');
+      final note = find.text('Name, phone number and photo can only be changed at the front desk.');
       await tester.scrollUntilVisible(note, 300, scrollable: find.byType(Scrollable).first);
       expect(find.text('Moi Avenue, Nairobi'), findsOneWidget);
     });

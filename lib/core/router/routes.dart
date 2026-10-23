@@ -3,6 +3,8 @@ abstract final class Routes {
   static const login = '/login';
   static const otp = '/login/otp';
   static const home = '/home';
+  static const builder = '/builder';
+  static const builderWorkout = '/builder/workout';
   static const more = '/more';
   static const profile = '/profile';
   static const editProfile = '/profile/edit';

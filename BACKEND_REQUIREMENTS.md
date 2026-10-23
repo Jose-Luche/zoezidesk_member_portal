@@ -100,6 +100,40 @@ with the front desk because changing it changes how the member logs in.
 Name and photo stay because staff use them to identify members at
 check-in.
 
+## B3c. Workout builder ✅ (Feature 5)
+
+Commit `fb4f8f8` on `mobile-api` (`Member\GuidedWorkoutController`, which only
+`routes/api.php` uses; tests in `GuidedWorkoutTest.php`, 12 tests).
+
+**Fixed.** These returned 500 for app (token) requests:
+
+| Problem | Effect | Fix |
+|---|---|---|
+| `$this->authorize()`, but the Laravel 12 base `Controller` has no `AuthorizesRequests` | swap, remove, reorder, save-template, start-session, share all crashed | add the trait |
+| `auth('member')->user()` (web session guard) | null member on token requests: start-session, templates, 4-week plan, import, save/copy plan | use `$request->user()` |
+| start-session not transactional, accepted an empty workout | half-created sessions | transaction plus the web's "add at least one exercise" rule (422) |
+
+**Added** (all original response fields unchanged):
+
+- `GET /api/member/guided-workout/options`: the web form's choices and labels,
+  the member's last answers, and needs-attention muscles from their logs.
+- `GET /api/member/guided-workout/{id}`: one workout with its exercises.
+- `GET /api/member/guided-workout/{id}/exercises/{guidedExerciseId}/alternatives`:
+  swap candidates (the web results page has them; the API did not).
+- `generate` and `swap-exercise` responses gain `plateau`, `order`, `status`,
+  `template_name` and `session_id`.
+
+**⚠️ Prompt interpreter model is retired.** `WorkoutPromptInterpreterService`
+calls Anthropic with `claude-3-5-sonnet-20241022`, which is no longer
+available, so "Describe it" fails on both the web and the app. The app shows
+"Could not understand that description. Try the step-by-step form." The
+service is shared with the web, so it is not changed; it needs a current
+model ID and `ANTHROPIC_API_KEY` set.
+
+**Also noticed, not changed:** `shareTemplate` builds a URL with
+`route('member.workout-templates.import')`, which does not exist, so it
+throws. Nothing uses it (the web has no share UI).
+
 ## B3b. Attendance ⏳ (Feature 7)
 
 - `GET /api/member/attendance?page=`: check-ins, newest first, paginated.

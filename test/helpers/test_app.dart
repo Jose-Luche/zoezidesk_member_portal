@@ -6,6 +6,7 @@ import 'package:zoezidesk_member/core/storage/local_data_wiper.dart';
 import 'package:zoezidesk_member/core/storage/session_storage.dart';
 import 'package:zoezidesk_member/core/utils/clock.dart';
 import 'package:zoezidesk_member/data/api/auth_api.dart';
+import 'package:zoezidesk_member/data/api/builder_api.dart';
 import 'package:zoezidesk_member/data/api/dashboard_api.dart';
 import 'package:zoezidesk_member/data/api/profile_api.dart';
 import 'package:zoezidesk_member/data/db/app_database.dart';
@@ -15,6 +16,8 @@ import 'fakes.dart';
 class MockDashboardApi extends Mock implements DashboardApi {}
 
 class MockProfileApi extends Mock implements ProfileApi {}
+
+class MockBuilderApi extends Mock implements BuilderApi {}
 
 AppDatabase memoryDatabase() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -37,6 +40,7 @@ class TestEnv {
   final authApi = MockAuthApi();
   final dashboardApi = MockDashboardApi();
   final profileApi = MockProfileApi();
+  final builderApi = MockBuilderApi();
   DateTime now = testNow;
 
   List<Override> get overrides => [
@@ -45,6 +49,7 @@ class TestEnv {
         authApiProvider.overrideWithValue(authApi),
         dashboardApiProvider.overrideWithValue(dashboardApi),
         profileApiProvider.overrideWithValue(profileApi),
+        builderApiProvider.overrideWithValue(builderApi),
         clockProvider.overrideWithValue(() => now),
         imageCacheClearerProvider.overrideWithValue(() async => imageCacheCleared++),
       ];
@@ -145,6 +150,76 @@ Map<String, dynamic> profileJson({String? photoUrl}) => {
         },
       ],
       'generated_at': '2026-10-23T10:00:00+03:00',
+    };
+
+Map<String, dynamic> builderOptionsJson({
+  Map<String, dynamic> lastInputs = const {
+    'energy_level': 'medium',
+    'time_minutes': '45',
+    'focus_muscles': ['full_body'],
+    'excluded_muscles': [],
+    'equipment': [],
+    'goal': 'stay_active',
+    'experience_level': 'beginner',
+  },
+  List<Map<String, dynamic>> suggested = const [
+    {'key': 'back_lats', 'label': 'Lats', 'reason': '12 days since last trained'},
+  ],
+}) =>
+    {
+      'muscles': {
+        'chest': 'Chest', 'back_lats': 'Back (Lats)', 'shoulders': 'Shoulders',
+        'biceps': 'Biceps', 'triceps': 'Triceps', 'quads': 'Quads', 'full_body': 'Full Body',
+      },
+      'equipment': {'dumbbells': 'Dumbbells', 'barbell': 'Barbell', 'bodyweight': 'Bodyweight'},
+      'goals': {
+        'strength': 'Build Strength', 'growth': 'Muscle Growth', 'stay_active': 'Stay Active',
+      },
+      'experience_levels': {
+        'beginner': 'Beginner', 'intermediate': 'Intermediate', 'advanced': 'Advanced',
+      },
+      'energy_levels': {'low': 'Low', 'medium': 'Medium', 'high': 'High'},
+      'time_minutes': {'min': 10, 'max': 180},
+      'last_inputs': lastInputs,
+      'suggested_muscles': suggested,
+    };
+
+Map<String, dynamic> guidedExerciseJson(int id, String name, int order, {bool plateau = false}) => {
+      'id': id,
+      'exercise_id': 100 + id,
+      'name': name,
+      'instructions': 'Keep your back flat.',
+      'equipment': ['dumbbells'],
+      'muscle_group': 'push',
+      'difficulty': 'beginner',
+      'target_sets': 3,
+      'target_reps': 10,
+      'target_weight_kg': '12.50',
+      'rest_seconds': 90,
+      'suggested_weight_progression': '+2.5kg if all reps completed',
+      'reason': 'Targets your chest',
+      'order': order,
+      'plateau': plateau,
+    };
+
+Map<String, dynamic> guidedWorkoutJson({
+  String status = 'draft',
+  List<Map<String, dynamic>>? exercises,
+  String? templateName,
+}) =>
+    {
+      'id': 9,
+      'explanation': 'A balanced chest session for muscle growth.',
+      'estimated_duration_minutes': 45,
+      'status': status,
+      'template_name': templateName,
+      'session_id': status == 'in_progress' ? 55 : null,
+      'exercises': exercises ??
+          [
+            guidedExerciseJson(1, 'Bench Press', 1),
+            guidedExerciseJson(2, 'Incline Dumbbell Press', 2, plateau: true),
+            guidedExerciseJson(3, 'Push-up', 3),
+          ],
     };
 
 const testCardJson = {

@@ -7,6 +7,8 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/state/session_controller.dart';
+import '../../features/builder/screens/builder_screen.dart';
+import '../../features/builder/screens/workout_result_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/design_gallery/design_gallery_screen.dart';
 import '../../features/more/more_screen.dart';
@@ -58,10 +60,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(path: Routes.home, builder: (_, _) => const DashboardScreen()),
           ]),
           StatefulShellBranch(routes: [
+            GoRoute(path: Routes.builder, builder: (_, _) => const BuilderScreen()),
+          ]),
+          StatefulShellBranch(routes: [
             GoRoute(path: Routes.more, builder: (_, _) => const MoreScreen()),
           ]),
         ],
       ),
+      // Outside the shell so it covers the bottom bar while editing.
+      GoRoute(path: Routes.builderWorkout, builder: (_, _) => const WorkoutResultScreen()),
       GoRoute(path: Routes.membershipCard, builder: (_, _) => const MembershipCardScreen()),
       GoRoute(
         path: Routes.profile,
@@ -107,6 +114,11 @@ class _AppShell extends StatelessWidget {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.fitness_center_outlined),
+            selectedIcon: Icon(Icons.fitness_center_rounded),
+            label: 'Builder',
           ),
           NavigationDestination(
             icon: Icon(Icons.menu_rounded),

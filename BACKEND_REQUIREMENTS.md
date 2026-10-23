@@ -133,6 +133,8 @@ class from a package that was not installed, read the key with `env()`
 - structured output (JSON schema), `effort: low`, server-side refusal fallback
 - result clamped to values the builder accepts; clear error when the key is missing
 
+**The app does not offer "Describe it" for now** (removed to avoid API costs). The backend stays ready; re-adding it in the app is a small change.
+
 **To switch it on:** set `ANTHROPIC_API_KEY` in the server's `.env`, then run
 `php artisan config:clear` (or `config:cache`). Until then "Describe it"
 falls back to the step-by-step form, as it does today. Each use is billed

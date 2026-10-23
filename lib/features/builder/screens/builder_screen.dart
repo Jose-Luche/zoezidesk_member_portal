@@ -13,8 +13,9 @@ import '../../../shared/widgets/state_message.dart';
 import '../state/builder_providers.dart';
 import '../widgets/builder_steps.dart';
 
-/// Guided workout builder: the web portal's 7-step form, or a free-text
-/// description. The server builds the workout, so building is online only.
+/// Guided workout builder: the web portal's 7-step form. The server builds
+/// the workout, so building is online only. (The web's free-text "describe
+/// it" mode is left out: it needs a paid Claude API key.)
 class BuilderScreen extends ConsumerStatefulWidget {
   const BuilderScreen({super.key});
 
@@ -23,8 +24,6 @@ class BuilderScreen extends ConsumerStatefulWidget {
 }
 
 class _BuilderScreenState extends ConsumerState<BuilderScreen> {
-  bool _describe = false;
-
   @override
   void initState() {
     super.initState();
@@ -51,7 +50,7 @@ class _BuilderScreenState extends ConsumerState<BuilderScreen> {
   Widget build(BuildContext context) {
     final options = ref.watch(builderOptionsProvider).value?.data;
     final actions = ref.watch(builderActionsProvider);
-    // Keeps the answers alive while the "Describe it" view is showing.
+    // Keeps the answers alive while the workout screen is open on top.
     ref.watch(builderFormProvider);
 
     final Widget body;
@@ -67,24 +66,12 @@ class _BuilderScreenState extends ConsumerState<BuilderScreen> {
               : StateMessage.error(
                   onAction: () => ref.read(builderActionsProvider.notifier).loadOptions(),
                 );
-    } else if (_describe) {
-      body = _DescribeView(onBuilt: _openWorkout, onReview: () => setState(() => _describe = false));
     } else {
       body = _StepView(options: options, onBuild: _build);
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Workout builder'),
-        actions: [
-          if (options != null)
-            TextButton.icon(
-              onPressed: actions.isLoading ? null : () => setState(() => _describe = !_describe),
-              icon: Icon(_describe ? Icons.checklist_rounded : Icons.edit_note_rounded),
-              label: Text(_describe ? 'Step by step' : 'Describe it'),
-            ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Workout builder')),
       body: body,
     );
   }
@@ -155,10 +142,6 @@ class _StepView extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpace.md),
             children: [
               if (form.step == BuilderStep.energy) const _LastWorkoutCard(),
-              if (form.reviewNotice != null) ...[
-                InfoBanner(message: form.reviewNotice!, tone: BadgeTone.highlight),
-                const SizedBox(height: AppSpace.md),
-              ],
               Text(copy.title, style: text.headlineMedium),
               if (copy.help != null) ...[
                 const SizedBox(height: AppSpace.xs),
@@ -227,80 +210,4 @@ class _BuildError extends StatelessWidget {
             ? 'You are offline. Building a workout needs an internet connection.'
             : error.message,
       );
-}
-
-class _DescribeView extends ConsumerStatefulWidget {
-  const _DescribeView({required this.onBuilt, required this.onReview});
-
-  final VoidCallback onBuilt;
-  final VoidCallback onReview;
-
-  @override
-  ConsumerState<_DescribeView> createState() => _DescribeViewState();
-}
-
-class _DescribeViewState extends ConsumerState<_DescribeView> {
-  final _prompt = TextEditingController();
-
-  @override
-  void dispose() {
-    _prompt.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    FocusScope.of(context).unfocus();
-    final outcome = await ref.read(builderActionsProvider.notifier).describe(_prompt.text);
-    if (!mounted) return;
-    switch (outcome) {
-      case Built():
-        widget.onBuilt();
-      case NeedsReview(:final inputs):
-        ref.read(builderFormProvider.notifier).review(inputs);
-        widget.onReview();
-      case null:
-        break;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final actions = ref.watch(builderActionsProvider);
-    final error = actions.error;
-    final text = Theme.of(context).textTheme;
-
-    return ListView(
-      padding: const EdgeInsets.all(AppSpace.md),
-      children: [
-        Text('Describe your workout', style: text.headlineMedium),
-        const SizedBox(height: AppSpace.xs),
-        Text(
-          'Say what you want to train, how long you have and any equipment or injuries.',
-          style: text.bodySmall,
-        ),
-        const SizedBox(height: AppSpace.lg),
-        TextField(
-          controller: _prompt,
-          minLines: 4,
-          maxLines: 8,
-          maxLength: 1000,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-            labelText: 'Your workout',
-            hintText: 'Arms today with dumbbells, about 45 minutes. My left shoulder is sore.',
-            alignLabelWithHint: true,
-          ),
-        ),
-        if (error is AppFailure) ...[
-          const SizedBox(height: AppSpace.md),
-          _BuildError(error),
-        ],
-        const SizedBox(height: AppSpace.lg),
-        FilledButton(
-          onPressed: actions.isLoading ? null : _submit,
-          child: Text(actions.isLoading ? 'Building…' : 'Build from description'),
-        ),
-      ],
-    );
-  }
 }

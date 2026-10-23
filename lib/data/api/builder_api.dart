@@ -21,9 +21,6 @@ class BuilderApi {
 
   Future<Map<String, dynamic>> options() => _get('$_base/options');
 
-  Future<Map<String, dynamic>> interpret(String prompt) =>
-      _post('$_base/interpret', {'prompt': prompt});
-
   Future<Map<String, dynamic>> generate(BuilderInputs inputs) => _post('$_base/generate', {
         'energy_level': inputs.energyLevel,
         'time_minutes': inputs.timeMinutes,

@@ -22,7 +22,6 @@ class BuilderFormState {
     this.step = BuilderStep.energy,
     this.inputs = const BuilderInputs(),
     this.seeded = false,
-    this.reviewNotice,
   });
 
   final BuilderStep step;
@@ -30,9 +29,6 @@ class BuilderFormState {
 
   /// Defaults from the member's last answers have been applied.
   final bool seeded;
-
-  /// Shown after a low-confidence description filled in the answers.
-  final String? reviewNotice;
 
   bool get isLast => step == BuilderStep.experience;
   int get number => step.index + 1;
@@ -49,14 +45,11 @@ class BuilderFormState {
     BuilderStep? step,
     BuilderInputs? inputs,
     bool? seeded,
-    String? reviewNotice,
-    bool clearNotice = false,
   }) =>
       BuilderFormState(
         step: step ?? this.step,
         inputs: inputs ?? this.inputs,
         seeded: seeded ?? this.seeded,
-        reviewNotice: clearNotice ? null : reviewNotice ?? this.reviewNotice,
       );
 }
 
@@ -79,7 +72,7 @@ class BuilderFormController extends Notifier<BuilderFormState> {
     state = state.copyWith(inputs: normaliseInputs(defaults), seeded: true);
   }
 
-  void _set(BuilderInputs inputs) => state = state.copyWith(inputs: inputs, clearNotice: true);
+  void _set(BuilderInputs inputs) => state = state.copyWith(inputs: inputs);
 
   void setEnergy(String v) => _set(state.inputs.copyWith(energyLevel: v));
   void setTime(int minutes) => _set(state.inputs.copyWith(timeMinutes: minutes.clamp(10, 180)));
@@ -110,39 +103,13 @@ class BuilderFormController extends Notifier<BuilderFormState> {
     if (state.step.index == 0) return;
     state = state.copyWith(step: BuilderStep.values[state.step.index - 1]);
   }
-
-  /// A low-confidence description: fill the answers and land on the last
-  /// step so the member reviews them (web behaviour).
-  void review(BuilderInputs interpreted) => state = state.copyWith(
-        inputs: normaliseInputs(interpreted),
-        step: BuilderStep.experience,
-        reviewNotice: 'We filled in your answers from the description. Check them, then build.',
-      );
 }
 
 final builderFormProvider =
     NotifierProvider.autoDispose<BuilderFormController, BuilderFormState>(BuilderFormController.new);
 
-/// Outcome of building from a description.
-sealed class DescribeOutcome {
-  const DescribeOutcome();
-}
-
-class Built extends DescribeOutcome {
-  const Built(this.workout);
-  final GuidedWorkout workout;
-}
-
-class NeedsReview extends DescribeOutcome {
-  const NeedsReview(this.inputs);
-  final BuilderInputs inputs;
-}
-
 /// Server calls for building. Generation runs on the server: online only.
 class BuilderActions extends Notifier<AsyncValue<void>> {
-  static const autoBuildConfidence = 0.85;
-  static const minPromptLength = 10;
-
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
@@ -174,33 +141,6 @@ class BuilderActions extends Notifier<AsyncValue<void>> {
   Future<GuidedWorkout?> generate(BuilderInputs inputs) =>
       _run(() => ref.read(builderRepositoryProvider).generate(normaliseInputs(inputs)));
 
-  /// Interprets a free-text description. High confidence builds straight
-  /// away; otherwise the answers go back to the form for review.
-  Future<DescribeOutcome?> describe(String prompt) {
-    final text = prompt.trim();
-    if (text.length < minPromptLength) {
-      state = AsyncError(
-        const ValidationFailure('Describe your workout in a bit more detail.'),
-        StackTrace.current,
-      );
-      return Future.value();
-    }
-    return _run(() async {
-      final repo = ref.read(builderRepositoryProvider);
-      final InterpretResult result;
-      try {
-        result = await repo.interpret(text);
-      } on ServerFailure {
-        throw const ServerFailure(
-          'Could not understand that description. Try the step-by-step form.',
-        );
-      }
-      if (result.confidence >= autoBuildConfidence) {
-        return Built(await repo.generate(normaliseInputs(result.inputs)));
-      }
-      return NeedsReview(result.inputs);
-    });
-  }
 }
 
 final builderActionsProvider =

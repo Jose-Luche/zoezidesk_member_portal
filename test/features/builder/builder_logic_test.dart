@@ -85,16 +85,6 @@ void main() {
       form().setTime(400);
       expect(state().inputs.timeMinutes, 180);
     });
-
-    test('review fills answers and lands on the last step with a notice', () {
-      form().review(const BuilderInputs(focusMuscles: ['biceps'], goal: 'growth'));
-      expect(state().step, BuilderStep.experience);
-      expect(state().inputs.goal, 'growth');
-      expect(state().reviewNotice, isNotNull);
-
-      form().setExperience('advanced');
-      expect(state().reviewNotice, isNull);
-    });
   });
 
   group('parsing', () {
@@ -169,78 +159,6 @@ void main() {
 
       await expectLater(repo().remove(9, 1), throwsA(isA<NetworkFailure>()));
       expect((await repo().watchWorkout().first)!.data.exercises, hasLength(3));
-    });
-  });
-
-  group('describe', () {
-    late TestEnv env;
-    late ProviderContainer c;
-
-    setUp(() {
-      env = TestEnv();
-      c = ProviderContainer(overrides: env.overrides);
-      c.listen(builderActionsProvider, (_, _) {});
-    });
-
-    tearDown(() async {
-      c.dispose();
-      await env.dispose();
-    });
-
-    Map<String, dynamic> interpretJson(double confidence) => {
-          'inputs': {
-            'energy_level': 'medium',
-            'time_minutes': 30,
-            'focus_muscles': ['biceps', 'triceps'],
-            'excluded_muscles': [],
-            'equipment': ['dumbbells'],
-            'goal': 'stay_active',
-            'experience_level': 'intermediate',
-          },
-          'confidence': confidence,
-        };
-
-    test('high confidence builds straight away', () async {
-      when(() => env.builderApi.interpret(any())).thenAnswer((_) async => interpretJson(0.9));
-      when(() => env.builderApi.generate(any())).thenAnswer((_) async => guidedWorkoutJson());
-
-      final outcome = await c.read(builderActionsProvider.notifier).describe('Arms with dumbbells, 30 min');
-
-      expect(outcome, isA<Built>());
-      final sent = verify(() => env.builderApi.generate(captureAny())).captured.single as BuilderInputs;
-      expect(sent.focusMuscles, ['biceps', 'triceps']);
-    });
-
-    test('low confidence goes back to the form for review', () async {
-      when(() => env.builderApi.interpret(any())).thenAnswer((_) async => interpretJson(0.6));
-
-      final outcome = await c.read(builderActionsProvider.notifier).describe('something with arms maybe');
-
-      expect(outcome, isA<NeedsReview>());
-      verifyNever(() => env.builderApi.generate(any()));
-    });
-
-    test('too short asks for more detail without calling the server', () async {
-      await c.read(builderActionsProvider.notifier).describe('arms');
-      expect(c.read(builderActionsProvider).error, isA<ValidationFailure>());
-      verifyNever(() => env.builderApi.interpret(any()));
-    });
-
-    test('an interpreter failure suggests the step-by-step form', () async {
-      when(() => env.builderApi.interpret(any())).thenThrow(DioException(
-        requestOptions: RequestOptions(),
-        type: DioExceptionType.badResponse,
-        response: Response(
-          requestOptions: RequestOptions(),
-          statusCode: 400,
-          data: {'error': 'Failed to interpret prompt', 'message': 'model not found'},
-        ),
-      ));
-
-      await c.read(builderActionsProvider.notifier).describe('Arms with dumbbells, 30 min');
-
-      final error = c.read(builderActionsProvider).error as AppFailure;
-      expect(error.message, 'Could not understand that description. Try the step-by-step form.');
     });
   });
 }

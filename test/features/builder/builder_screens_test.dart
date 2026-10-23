@@ -49,6 +49,11 @@ void main() {
   }
 
   group('form', () {
+    testWidgets('there is no describe-it mode', (tester) async {
+      await openBuilder(tester);
+      expect(find.text('Describe it'), findsNothing);
+    });
+
     testWidgets('offline with nothing cached', (tester) async {
       when(() => env.builderApi.options()).thenThrow(offline());
       await openBuilder(tester);
@@ -112,31 +117,6 @@ void main() {
       );
       expect(find.text('Step 7 of 7'), findsOneWidget);
     });
-
-    testWidgets('low-confidence description returns to the form for review', (tester) async {
-      when(() => env.builderApi.interpret(any())).thenAnswer((_) async => {
-            'inputs': {
-              'energy_level': 'low',
-              'time_minutes': 20,
-              'focus_muscles': ['quads'],
-              'goal': 'stay_active',
-              'experience_level': 'advanced',
-            },
-            'confidence': 0.6,
-          });
-      await openBuilder(tester);
-      await tapText(tester, 'Describe it');
-
-      await tester.enterText(find.byType(TextField), 'Tired, short leg session please');
-      await tapText(tester, 'Build from description');
-
-      expect(find.text('Step 7 of 7'), findsOneWidget);
-      expect(
-        find.text('We filled in your answers from the description. Check them, then build.'),
-        findsOneWidget,
-      );
-      verifyNever(() => env.builderApi.generate(any()));
-    });
   });
 
   group('workout', () {
@@ -144,13 +124,10 @@ void main() {
       when(() => env.builderApi.generate(any())).thenAnswer((_) async => workout ?? guidedWorkoutJson());
       when(() => env.builderApi.workout(9)).thenAnswer((_) async => workout ?? guidedWorkoutJson());
       await openBuilder(tester);
-      await tapText(tester, 'Describe it');
-      when(() => env.builderApi.interpret(any())).thenAnswer((_) async => {
-            'inputs': {'focus_muscles': ['chest']},
-            'confidence': 0.95,
-          });
-      await tester.enterText(find.byType(TextField), 'Chest day with dumbbells for 45 minutes');
-      await tapText(tester, 'Build from description');
+      for (var i = 0; i < 6; i++) {
+        await tapText(tester, 'Next');
+      }
+      await tapText(tester, 'Build my workout');
       expect(find.text('Your workout'), findsOneWidget);
     }
 
@@ -237,7 +214,10 @@ void main() {
       await openWorkout(tester);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      await tapText(tester, 'Step by step');
+      await tapText(tester, 'Back');
+      for (var i = 0; i < 5; i++) {
+        await tapText(tester, 'Back');
+      }
 
       expect(find.text('Your last workout'), findsOneWidget);
       await tapText(tester, 'Your last workout');

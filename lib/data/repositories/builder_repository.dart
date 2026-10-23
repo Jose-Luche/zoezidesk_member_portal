@@ -39,9 +39,6 @@ class BuilderRepository {
     await _cache.put(optionsKey, json, _clock());
   }
 
-  Future<InterpretResult> interpret(String prompt) =>
-      guardRequest(() async => InterpretResult.fromJson(await _api.interpret(prompt)));
-
   Future<GuidedWorkout> generate(BuilderInputs inputs) async {
     final json = await guardRequest(() => _api.generate(inputs));
     final workout = GuidedWorkout.fromJson(json);

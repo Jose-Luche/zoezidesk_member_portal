@@ -214,18 +214,3 @@ class ExerciseAlternative {
   final List<String> equipment;
   final String? muscleGroup;
 }
-
-/// `POST /member/guided-workout/interpret`.
-class InterpretResult {
-  const InterpretResult({required this.inputs, required this.confidence, this.message});
-
-  factory InterpretResult.fromJson(Map<String, dynamic> json) => InterpretResult(
-        inputs: BuilderInputs.fromServer((json['inputs'] as Map).cast<String, dynamic>()),
-        confidence: (_numOrNull(json['confidence']) ?? 0.5).toDouble(),
-        message: json['message'] as String?,
-      );
-
-  final BuilderInputs inputs;
-  final double confidence;
-  final String? message;
-}

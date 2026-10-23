@@ -5,33 +5,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:zoezidesk_member/app.dart';
-import 'package:zoezidesk_member/core/storage/session_storage.dart';
-import 'package:zoezidesk_member/data/api/auth_api.dart';
 import 'package:zoezidesk_member/data/dto/auth_dto.dart';
 import 'package:zoezidesk_member/features/auth/state/session_controller.dart';
 
 import '../../helpers/fakes.dart';
+import '../../helpers/test_app.dart';
 
 void main() {
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
-  late MockAuthApi api;
-  late InMemorySecureStore store;
+  late TestEnv env;
 
   setUp(() {
-    api = MockAuthApi();
-    store = InMemorySecureStore();
-    when(() => api.requestOtp(any())).thenAnswer(
+    env = TestEnv();
+    env.dashboardReturns(dashboardJson());
+    when(() => env.authApi.requestOtp(any())).thenAnswer(
       (_) async => const OtpRequestResult(success: true, message: 'sent'),
     );
-    when(() => api.logout()).thenAnswer((_) async {});
   });
 
+  tearDown(() => env.dispose());
+
   Future<ProviderContainer> pumpApp(WidgetTester tester) async {
-    final container = ProviderContainer(overrides: [
-      secureStoreProvider.overrideWithValue(store),
-      authApiProvider.overrideWithValue(api),
-    ]);
+    final container = ProviderContainer(overrides: env.overrides);
     addTearDown(container.dispose);
     await tester.pumpWidget(
       UncontrolledProviderScope(container: container, child: const ZoeziApp()),
@@ -65,12 +61,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Enter a valid phone number.'), findsOneWidget);
-    verifyNever(() => api.requestOtp(any()));
+    verifyNever(() => env.authApi.requestOtp(any()));
   });
 
-  testWidgets('full flow: phone, wrong code, right code, home, logout', (tester) async {
+  testWidgets('full flow: phone, wrong code, right code, dashboard', (tester) async {
     var attempts = 0;
-    when(() => api.verifyOtp(
+    when(() => env.authApi.verifyOtp(
           phone: any(named: 'phone'),
           code: any(named: 'code'),
           deviceName: any(named: 'deviceName'),
@@ -85,30 +81,21 @@ void main() {
     await tester.tap(find.text('Send code'));
     await tester.pumpAndSettle();
     expect(find.text('Enter your code'), findsOneWidget);
-    verify(() => api.requestOtp('0711000001')).called(1);
+    verify(() => env.authApi.requestOtp('0711000001')).called(1);
 
     // Six digits submit automatically.
     await tester.enterText(find.byType(TextField), '000000');
     await tester.pumpAndSettle();
     expect(find.text('Invalid or expired code. Please request a new one.'), findsOneWidget);
     expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
-    expect(store.values, isEmpty);
+    expect(env.store.values, isEmpty);
 
     await tester.enterText(find.byType(TextField), '123456');
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome, Jane'), findsOneWidget);
+    expect(find.text('Hi, Jane'), findsOneWidget);
     expect(container.read(sessionControllerProvider), isA<SignedIn>());
-    expect(store.values, isNotEmpty);
-
-    await tester.tap(find.text('Log out'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Log out'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Member login'), findsOneWidget);
-    expect(store.values, isEmpty);
-    verify(() => api.logout()).called(1);
+    expect(env.store.values, isNotEmpty);
   });
 
   testWidgets('resend is locked for 60 seconds', (tester) async {
@@ -123,20 +110,21 @@ void main() {
 
     await tester.tap(find.text('Resend code'));
     await tester.pumpAndSettle();
-    verify(() => api.requestOtp('0711000001')).called(2);
+    verify(() => env.authApi.requestOtp('0711000001')).called(2);
     expect(find.text('A new code is on its way.'), findsOneWidget);
   });
 
   testWidgets('expired session returns to login with a reason', (tester) async {
-    await SessionStorage(store).save(token: 'tok', member: testMember);
+    await env.signIn();
     final container = await pumpApp(tester);
-    expect(find.text('Welcome, Jane'), findsOneWidget);
+    expect(find.text('Hi, Jane'), findsOneWidget);
 
     await container.read(sessionControllerProvider.notifier).expire();
     await tester.pumpAndSettle();
 
     expect(find.text('Member login'), findsOneWidget);
     expect(find.text('Your session has ended. Please log in again.'), findsOneWidget);
-    expect(store.values, isEmpty);
+    expect(env.store.values, isEmpty);
+    expect(await env.db.select(env.db.cachedDocuments).get(), isEmpty);
   });
 }

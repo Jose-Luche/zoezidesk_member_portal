@@ -7,47 +7,51 @@ import '../../core/router/routes.dart';
 import '../../core/theme/app_tokens.dart';
 import '../auth/state/session_controller.dart';
 
-/// Temporary signed-in screen until the dashboard feature replaces it.
-class HomePlaceholderScreen extends ConsumerWidget {
-  const HomePlaceholderScreen({super.key});
+/// Account and app options. Settings (theme, notifications) join this tab
+/// in the Settings feature.
+class MoreScreen extends ConsumerWidget {
+  const MoreScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionControllerProvider);
-    if (session is! SignedIn) return const SizedBox.shrink();
-    final member = session.member;
+    final member = session is SignedIn ? session.member : null;
     final text = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('ZoeziDesk')),
+      appBar: AppBar(title: const Text('More')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpace.md),
         children: [
-          Text('Welcome, ${member.name.split(' ').first}', style: text.headlineLarge),
-          if (member.gymName != null)
-            Text(member.gymName!, style: text.bodySmall),
-          const SizedBox(height: AppSpace.lg),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpace.md),
-              child: Text(
-                'Your dashboard arrives in the next feature.',
-                style: text.bodyMedium,
+          if (member != null)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.person_rounded),
+                title: Text(member.name, style: text.titleMedium),
+                subtitle: Text(
+                  [member.memberNumber, member.gymName].whereType<String>().join(' · '),
+                  style: text.bodySmall,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpace.lg),
-          if (kDebugMode) ...[
-            OutlinedButton(
-              onPressed: () => context.push(Routes.designGallery),
-              child: const Text('Design system'),
+          const SizedBox(height: AppSpace.md),
+          Card(
+            child: Column(
+              children: [
+                if (kDebugMode)
+                  ListTile(
+                    leading: const Icon(Icons.palette_rounded),
+                    title: const Text('Design system'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(Routes.designGallery),
+                  ),
+                ListTile(
+                  leading: const Icon(Icons.logout_rounded),
+                  title: const Text('Log out'),
+                  onTap: () => confirmLogout(context, ref),
+                ),
+              ],
             ),
-            const SizedBox(height: AppSpace.sm),
-          ],
-          OutlinedButton.icon(
-            onPressed: () => confirmLogout(context, ref),
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('Log out'),
           ),
         ],
       ),
@@ -55,7 +59,7 @@ class HomePlaceholderScreen extends ConsumerWidget {
   }
 }
 
-/// Bottom-sheet confirmation, then logout. Reused by Settings later.
+/// Bottom-sheet confirmation, then logout.
 Future<void> confirmLogout(BuildContext context, WidgetRef ref) async {
   final confirmed = await showModalBottomSheet<bool>(
     context: context,

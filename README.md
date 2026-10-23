@@ -55,6 +55,18 @@ create an upload keystore and reference it from `android/key.properties`
 
 Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
 
+## Offline data
+
+- Screens render from the local Drift database (`lib/data/db/`) and refresh
+  from the API in the background, on app resume and on pull-to-refresh.
+- Cached API snapshots are AES-256-GCM encrypted (`FieldCipher`). The key
+  lives in secure storage, so logout, which wipes the database and secure
+  storage, leaves nothing readable.
+- Cached screens show "Updated …". A warning appears when the data is older
+  than 24 hours, or when a refresh failed or the phone is offline.
+- Android auto-backup is off so the database never leaves the device
+  without its key.
+
 ## Design system
 
 - All colors, spacing, radius, motion and font names live in

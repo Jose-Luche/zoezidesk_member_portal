@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,8 +7,10 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/state/session_controller.dart';
+import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/design_gallery/design_gallery_screen.dart';
-import '../../features/home/home_placeholder_screen.dart';
+import '../../features/more/more_screen.dart';
+import '../../shared/screens/coming_soon_screen.dart';
 import 'routes.dart';
 
 /// Guard rules, kept pure so they can be unit tested.
@@ -20,6 +23,9 @@ String? authRedirect(SessionState session, String location) {
       onPublic || location == Routes.splash ? Routes.home : null,
   };
 }
+
+GoRoute _comingSoon(String path, String title) =>
+    GoRoute(path: path, builder: (_, _) => ComingSoonScreen(title: title));
 
 final routerProvider = Provider<GoRouter>((ref) {
   final session = ValueNotifier<SessionState>(ref.read(sessionControllerProvider));
@@ -42,7 +48,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(path: Routes.home, builder: (_, _) => const HomePlaceholderScreen()),
+      StatefulShellRoute.indexedStack(
+        builder: (_, _, shell) => _AppShell(shell: shell),
+        branches: [
+          StatefulShellBranch(routes: [
+            GoRoute(path: Routes.home, builder: (_, _) => const DashboardScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: Routes.more, builder: (_, _) => const MoreScreen()),
+          ]),
+        ],
+      ),
+      _comingSoon(Routes.membershipCard, 'Membership card'),
+      _comingSoon(Routes.classes, 'Classes'),
+      _comingSoon(Routes.checkIn, 'Check-in'),
+      _comingSoon(Routes.payments, 'Payments'),
       if (kDebugMode)
         GoRoute(
           path: Routes.designGallery,
@@ -57,3 +77,33 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
   return router;
 });
+
+/// Bottom navigation. Tabs are added as their features land.
+class _AppShell extends StatelessWidget {
+  const _AppShell({required this.shell});
+
+  final StatefulNavigationShell shell;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: shell,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: shell.currentIndex,
+        onDestinationSelected: (i) =>
+            shell.goBranch(i, initialLocation: i == shell.currentIndex),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.menu_rounded),
+            label: 'More',
+          ),
+        ],
+      ),
+    );
+  }
+}

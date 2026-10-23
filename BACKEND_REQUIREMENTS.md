@@ -40,6 +40,30 @@ The web `OtpLogin::verifyOtp` also looks codes up without the phone. It is
 rate-limited per IP, so the risk is lower, but the same fix applies. Not
 changed, because the web portal is out of scope.
 
+## B1b. Dashboard fields ✅ (Feature 3)
+
+Commit `36a64c8` on `mobile-api`. `GET /api/member/dashboard` moved to
+`Api\Member\DashboardController`; tests in
+`tests/Feature/Api/Member/DashboardTest.php`. Every original field is
+unchanged. Added fields:
+
+| Field | Why |
+|---|---|
+| `member.status` | Show suspended or inactive members correctly |
+| `membership.starts_at_iso`, `expires_at_iso` | Dates the app can parse (`d M Y` strings stay) |
+| `membership.days_remaining` | Whole days. The original `days_left` is a float on Carbon 3 (e.g. `12.208`) |
+| `membership.expiry_percent` | Progress bar, same formula as the web dashboard |
+| `membership.state` | `active` / `expiring` (≤ 7 days) / `expired` (by date, even if the daily expiry job has not run) |
+| `recent_payments[].date_iso` | Parseable payment time |
+| `total_paid` | Shown on the web dashboard |
+| `generated_at` | Server time of the snapshot |
+
+The app also reads the original response, so it works before this is deployed.
+
+The web dashboard prints `$daysLeft` from the same float calculation, so it
+can show values like "12.208333 days remaining". Not changed (web is out of
+scope).
+
 ## B2. Idempotency keys ⏳ (Feature 6)
 
 Middleware honouring an `Idempotency-Key` header on member write endpoints.

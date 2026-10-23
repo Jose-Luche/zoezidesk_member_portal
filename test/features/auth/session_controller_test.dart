@@ -2,20 +2,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:zoezidesk_member/core/storage/session_storage.dart';
-import 'package:zoezidesk_member/data/api/auth_api.dart';
 import 'package:zoezidesk_member/features/auth/state/session_controller.dart';
 
 import '../../helpers/fakes.dart';
+import '../../helpers/test_app.dart';
 
 void main() {
+  late TestEnv env;
   late MockAuthApi api;
   late InMemorySecureStore store;
 
   ProviderContainer makeContainer() {
-    final c = ProviderContainer(overrides: [
-      secureStoreProvider.overrideWithValue(store),
-      authApiProvider.overrideWithValue(api),
-    ]);
+    final c = ProviderContainer(overrides: env.overrides);
     addTearDown(c.dispose);
     return c;
   }
@@ -27,10 +25,12 @@ void main() {
   }
 
   setUp(() {
-    api = MockAuthApi();
-    store = InMemorySecureStore();
-    when(() => api.logout()).thenAnswer((_) async {});
+    env = TestEnv();
+    api = env.authApi;
+    store = env.store;
   });
+
+  tearDown(() => env.dispose());
 
   test('starts loading, then signed out with no stored session', () async {
     final c = makeContainer();

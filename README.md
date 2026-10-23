@@ -7,11 +7,53 @@ members portal; the web portal stays the functional reference.
 
 ```sh
 flutter pub get
-flutter run
+dart run build_runner build      # only after changing freezed/json models
+flutter run --dart-define-from-file=env/dev.json
 ```
 
-Environment values (API base URL) arrive with the login feature via
-`--dart-define-from-file=env/dev.json`; see `env/example.json` once added.
+## Environment values
+
+Configuration comes from `--dart-define-from-file`. Nothing is hardcoded,
+and the app refuses to start without `API_BASE_URL`.
+
+| File | Purpose | In git |
+|---|---|---|
+| `env/example.json` | Template listing every key | yes |
+| `env/dev.json` | Your local values | no |
+| `env/prod.json` | Production values | no |
+
+Keys:
+
+- `API_BASE_URL`: base of the mobile API, e.g. `https://gym.zoezidesk.com/api`.
+  From the Android emulator a local XAMPP backend is reachable at
+  `http://10.0.2.2/projects/zoezi_erp/public/api`. Plain HTTP is allowed in
+  debug builds only.
+
+Against a local backend with `APP_ENV=local`, the OTP screen shows the login
+code in debug builds, so no WhatsApp message is needed.
+
+## Build a release
+
+```sh
+flutter build appbundle --release --dart-define-from-file=env/prod.json
+flutter build apk --release --split-per-abi --dart-define-from-file=env/prod.json
+```
+
+Release signing still uses the debug key. Before the first Play Store upload,
+create an upload keystore and reference it from `android/key.properties`
+(gitignored).
+
+## Authentication
+
+- OTP over WhatsApp (`/member/otp/request`, `/member/otp/verify`).
+- The Sanctum token and the signed-in member are kept only in
+  `flutter_secure_storage`.
+- There are no refresh tokens. Any `401` on an authenticated request ends
+  the session, wipes local data and returns to login with a message.
+- Logout revokes the token on the server when online and always wipes local
+  data.
+
+Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
 
 ## Design system
 
@@ -24,6 +66,8 @@ Environment values (API base URL) arrive with the login feature via
   runtime font fetching is disabled, so text renders correctly offline.
 - `test/core/theme/contrast_test.dart` checks every text/background pair for
   4.5:1 contrast. Add a pair there whenever a new combination is used.
+- Debug builds have a design gallery at `/dev/design`, linked from the home
+  screen.
 
 ## Test
 

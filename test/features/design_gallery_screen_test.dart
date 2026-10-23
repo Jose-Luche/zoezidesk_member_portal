@@ -2,19 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:zoezidesk_member/app.dart';
+import 'package:zoezidesk_member/core/theme/app_theme.dart';
 import 'package:zoezidesk_member/core/theme/app_tokens.dart';
+import 'package:zoezidesk_member/core/theme/theme_mode_controller.dart';
+import 'package:zoezidesk_member/features/design_gallery/design_gallery_screen.dart';
+
+class _ThemedGallery extends ConsumerWidget {
+  const _ThemedGallery();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => MaterialApp(
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: ref.watch(themeModeProvider),
+        home: const DesignGalleryScreen(),
+      );
+}
 
 void main() {
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
-  Future<void> pumpApp(WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: ZoeziApp()));
+  Future<void> pumpGallery(WidgetTester tester) async {
+    await tester.pumpWidget(const ProviderScope(child: _ThemedGallery()));
     await tester.pumpAndSettle();
   }
 
   testWidgets('starts in dark theme and toggles to light', (tester) async {
-    await pumpApp(tester);
+    await pumpGallery(tester);
     BuildContext ctx() => tester.element(find.text('Design system'));
 
     expect(Theme.of(ctx()).brightness, Brightness.dark);
@@ -28,13 +42,13 @@ void main() {
   });
 
   testWidgets('primary button meets the 48dp touch target', (tester) async {
-    await pumpApp(tester);
+    await pumpGallery(tester);
     final size = tester.getSize(find.widgetWithText(FilledButton, 'Book class'));
     expect(size.height, greaterThanOrEqualTo(AppSizes.minTouch));
   });
 
   testWidgets('bottom sheet opens and closes', (tester) async {
-    await pumpApp(tester);
+    await pumpGallery(tester);
     final open = find.text('Open bottom sheet');
     await tester.scrollUntilVisible(
       open,

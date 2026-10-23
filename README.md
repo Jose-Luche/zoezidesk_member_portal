@@ -75,6 +75,10 @@ Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
 - Payment history is cached with amounts and receipts encrypted. Receipt
   PDFs open in the browser through a 10-minute signed link, so they need a
   connection; the app never puts its token in a URL.
+- Paying for a plan (M-Pesa STK push) is online only and never queued: a
+  payment must not be sent late or twice. Each attempt carries an
+  idempotency key, so a retry after a dropped connection gets the first
+  push back instead of sending another.
 - Android auto-backup is off so the database never leaves the device
   without its key.
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/formatters.dart';
@@ -75,6 +77,12 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               padding: const EdgeInsets.all(AppSpace.md),
               sliver: SliverList.list(
                 children: [
+                  FilledButton.icon(
+                    onPressed: () => context.push(Routes.checkout),
+                    icon: const Icon(Icons.phone_android_rounded),
+                    label: const Text('Renew with M-Pesa'),
+                  ),
+                  const SizedBox(height: AppSpace.md),
                   if (summary != null)
                     Card(
                       child: Padding(

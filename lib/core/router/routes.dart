@@ -16,6 +16,7 @@ abstract final class Routes {
   // "coming soon" screen, so the dashboard's quick actions already work.
   static const checkIn = '/check-in';
   static const payments = '/payments';
+  static const checkout = '/payments/pay';
 
   static const publicRoutes = {login, otp};
 }

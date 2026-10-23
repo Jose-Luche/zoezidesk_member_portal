@@ -115,7 +115,7 @@ void main() {
     expect(find.text('Expired'), findsOneWidget);
     expect(find.text('Expired 20 Oct 2026'), findsOneWidget);
     expect(
-      find.text('Your membership has expired. Visit the front desk or contact us to renew.'),
+      find.text('Your membership has expired. Renew in the app or at the front desk.'),
       findsOneWidget,
     );
   });
@@ -131,7 +131,7 @@ void main() {
 
     expect(find.text('Expires in 3 days'), findsOneWidget);
     expect(
-      find.text('Expires in 3 days. Visit the front desk or contact us to renew.'),
+      find.text('Expires in 3 days. Renew in the app or at the front desk.'),
       findsOneWidget,
     );
   });

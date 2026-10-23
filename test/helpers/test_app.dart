@@ -16,6 +16,7 @@ import 'package:zoezidesk_member/core/utils/url_opener.dart';
 import 'package:zoezidesk_member/data/api/attendance_api.dart';
 import 'package:zoezidesk_member/data/api/auth_api.dart';
 import 'package:zoezidesk_member/data/api/builder_api.dart';
+import 'package:zoezidesk_member/data/api/checkout_api.dart';
 import 'package:zoezidesk_member/data/api/classes_api.dart';
 import 'package:zoezidesk_member/data/api/dashboard_api.dart';
 import 'package:zoezidesk_member/data/api/payments_api.dart';
@@ -23,6 +24,7 @@ import 'package:zoezidesk_member/data/api/profile_api.dart';
 import 'package:zoezidesk_member/data/db/app_database.dart';
 import 'package:zoezidesk_member/data/sync/sync.dart';
 import 'package:zoezidesk_member/features/checkin/state/checkin_providers.dart';
+import 'package:zoezidesk_member/features/payments/state/checkout_controller.dart';
 
 import 'fakes.dart';
 
@@ -37,6 +39,8 @@ class MockClassesApi extends Mock implements ClassesApi {}
 class MockAttendanceApi extends Mock implements AttendanceApi {}
 
 class MockPaymentsApi extends Mock implements PaymentsApi {}
+
+class MockCheckoutApi extends Mock implements CheckoutApi {}
 
 class FakeBrightness implements BrightnessControl {
   final calls = <String>[];
@@ -73,6 +77,7 @@ class TestEnv {
   final classesApi = MockClassesApi();
   final attendanceApi = MockAttendanceApi();
   final paymentsApi = MockPaymentsApi();
+  final checkoutApi = MockCheckoutApi();
 
   /// Links the app asked the phone to open; [openUrlResult] is the answer.
   final openedUrls = <Uri>[];
@@ -94,6 +99,10 @@ class TestEnv {
         classesApiProvider.overrideWithValue(classesApi),
         attendanceApiProvider.overrideWithValue(attendanceApi),
         paymentsApiProvider.overrideWithValue(paymentsApi),
+        checkoutApiProvider.overrideWithValue(checkoutApi),
+        checkoutPollingProvider.overrideWithValue(
+          (every: const Duration(seconds: 1), upTo: const Duration(seconds: 5)),
+        ),
         urlOpenerProvider.overrideWithValue((url) async {
           openedUrls.add(url);
           return openUrlResult;
@@ -367,4 +376,41 @@ Map<String, dynamic> paymentsJson(
       'meta': {'current_page': page, 'last_page': lastPage, 'per_page': 10, 'total': total ?? rows.length},
       'total_paid': totalPaid,
       'generated_at': testNow.toIso8601String(),
+    };
+
+Map<String, dynamic> checkoutPlansJson({
+  bool mpesaEnabled = true,
+  Map<String, dynamic>? current,
+  int? pendingPaymentId,
+  List<Map<String, dynamic>>? plans,
+}) =>
+    {
+      'mpesa_enabled': mpesaEnabled,
+      'phone': '254711000001',
+      'current': current,
+      'plans': plans ??
+          [
+            {'id': 1, 'name': 'Monthly', 'description': null, 'price': 3000, 'duration_days': 30, 'duration_label': '1 month'},
+            {'id': 2, 'name': 'Quarterly', 'description': 'Best value', 'price': 8000, 'duration_days': 90, 'duration_label': '3 months'},
+          ],
+      'pending_payment_id': pendingPaymentId,
+    };
+
+Map<String, dynamic> checkoutStatusJson(
+  int id,
+  String status, {
+  String? receipt,
+  String? failureReason,
+  String? startsAt,
+  String? expiresAt,
+}) =>
+    {
+      'id': id,
+      'status': status,
+      'amount': 3000,
+      'plan': 'Monthly',
+      'receipt': receipt,
+      'failure_reason': failureReason,
+      'paid_at': status == 'completed' ? testNow.toIso8601String() : null,
+      'membership': startsAt == null ? null : {'starts_at': startsAt, 'expires_at': expiresAt},
     };

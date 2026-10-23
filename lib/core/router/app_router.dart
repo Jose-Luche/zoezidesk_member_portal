@@ -14,6 +14,7 @@ import '../../features/classes/screens/classes_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/design_gallery/design_gallery_screen.dart';
 import '../../features/more/more_screen.dart';
+import '../../features/payments/screens/checkout_screen.dart';
 import '../../features/payments/screens/payments_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/profile/screens/membership_card_screen.dart';
@@ -80,7 +81,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(path: Routes.checkIn, builder: (_, _) => const CheckInScreen()),
-      GoRoute(path: Routes.payments, builder: (_, _) => const PaymentsScreen()),
+      GoRoute(
+        path: Routes.payments,
+        builder: (_, _) => const PaymentsScreen(),
+        routes: [
+          GoRoute(path: 'pay', builder: (_, _) => const CheckoutScreen()),
+        ],
+      ),
       if (kDebugMode)
         GoRoute(
           path: Routes.designGallery,

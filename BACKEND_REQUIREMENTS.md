@@ -216,6 +216,58 @@ The app caches the history in the `Payments` table (schema v4, additive)
 with amount, receipt, plan and method encrypted. Receipt links are online
 only and fetched fresh on every tap.
 
+## B7. Member checkout by M-Pesa STK push ✅ (Feature 9, commit `5bddb23`)
+
+Reuses the front-desk flow (`Admin\Memberships\InitiatePayment`) unchanged:
+`MembershipService::initiate` creates a pending membership and payment,
+`MpesaService::stkPush` sends the prompt, and the existing web route
+`POST /mpesa/callback/{gym}` completes the payment and activates the
+membership (extending from the current expiry on an early renewal). The
+callback, `MpesaService` and `MembershipService` are not modified.
+
+- `GET /api/member/payments/plans`: `mpesa_enabled` (the gym has shortcode,
+  passkey, consumer key and secret), `phone` (registered number), `current`
+  (`plan_id`, `plan_name`, `expires_at`), `plans` (`id`, `name`,
+  `description`, `price`, `duration_days`, `duration_label`) and
+  `pending_payment_id` (a prompt sent in the last 2 minutes, still pending).
+- `POST /api/member/payments/stk` `{plan_id, phone}` with `Idempotency-Key`:
+  `201 {payment_id, status: pending, amount, phone, message}`.
+  - 422 `errors.phone`: not a Safaricom number (2547… / 2541…).
+  - 422 `errors.plan_id`: the plan cannot be bought in the app.
+  - 422 `code: mpesa_unavailable`: the gym has no M-Pesa credentials.
+  - 422 `code: mpesa_rejected`: Daraja refused the push; the payment is
+    recorded as failed and its membership cancelled. 422 rather than 5xx so
+    the client's retry logic never re-sends it.
+  - 409 `code: pending_exists, payment_id`: a prompt from the last 2 minutes
+    is still pending; the app resumes watching it.
+  - 429: more than 5 pushes in an hour for this member.
+- `GET /api/member/payments/{id}/status`: `status`, `amount`, `plan`,
+  `receipt`, `failure_reason` (failed only), `paid_at`, and `membership`
+  (`starts_at`, `expires_at`) once completed. 404 for other members' payments.
+
+Business rules (decided for Feature 9; change them here if the gym disagrees):
+
+1. The prompt goes to the registered phone by default; the member may enter
+   another Safaricom number, as the front desk can.
+2. Members can buy active `standard` plans, plus the plan they are on now
+   (any category), so student, corporate and family plans stay with the
+   front desk, which can check eligibility. Early renewal is allowed and
+   starts the day after the current membership ends.
+3. The app checks the status every 5 seconds for 2 minutes. After that it
+   says it is still waiting rather than marking the payment failed: only the
+   callback decides. A second push is refused while one from the last
+   2 minutes is pending, so a member is never prompted twice at once.
+
+Production needs: a reachable `APP_URL` for the callback, each gym's Daraja
+credentials in M-Pesa settings, and `MPESA_ENV=live`. `MPESA_BASE_URL`
+(new, optional) points `MpesaService` at a fake Daraja for local testing;
+leave it unset in production.
+
+Not handled (as on the web): a pending payment whose callback never arrives
+stays pending. An STK status query (`/mpesa/stkpushquery/v1/query`) on a
+schedule would settle these; it needs a change to `MpesaService`, so it is
+left for you to decide.
+
 ## B6. `changes_since` ⏳
 
 An optional `?since=<ISO8601>` on list endpoints where it is cheap, so the
@@ -239,8 +291,6 @@ newest *active* membership. Eager loading and `whereHas` are covered by tests.
 - **Duplicate notes routes:** `PUT`/`DELETE /api/member/notes/{id}` are each
   defined twice in `routes/api.php` (closures, then `ProgressController`); the
   later definition wins. Which behaviour is intended?
-- **Member payments:** the web portal has no member payment flow ("visit the
-  front desk to renew"). Feature 9 needs a decision and an STK-push endpoint.
 - **Refresh tokens:** Sanctum tokens never expire (`sanctum.expiration` is
   null). The app treats any `401` as logout. Short-lived access tokens with
   refresh tokens are possible later if you want them.

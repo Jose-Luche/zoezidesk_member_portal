@@ -122,14 +122,17 @@ class _DashboardContent extends StatelessWidget {
     final text = Theme.of(context).textTheme;
 
     final notice = switch (status.state) {
-      MembershipState.expired => const InfoBanner(
+      MembershipState.expired => InfoBanner(
         tone: BadgeTone.danger,
-        message: 'Your membership has expired. Visit the front desk or contact us to renew.',
+        message: 'Your membership has expired. Renew in the app or at the front desk.',
+        actionLabel: 'Renew',
+        onAction: () => context.push(Routes.checkout),
       ),
       MembershipState.expiring => InfoBanner(
         tone: BadgeTone.warning,
-        message:
-            '${status.label}. Visit the front desk or contact us to renew.',
+        message: '${status.label}. Renew in the app or at the front desk.',
+        actionLabel: 'Renew',
+        onAction: () => context.push(Routes.checkout),
       ),
       _ => null,
     };

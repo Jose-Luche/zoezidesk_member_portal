@@ -165,11 +165,12 @@ void main() {
     env.dashboardReturns(dashboardJson());
     await pumpApp(tester);
 
-    final classes = find.text('Classes');
-    await tester.scrollUntilVisible(classes, 200, scrollable: find.byType(Scrollable).first);
-    await tester.ensureVisible(classes);
+    // Payments is not built yet: it opens the coming-soon screen.
+    final payments = find.descendant(of: find.byType(Card), matching: find.text('Payments'));
+    await tester.scrollUntilVisible(payments, 200, scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(payments);
     await tester.pumpAndSettle();
-    await tester.tap(classes);
+    await tester.tap(payments);
     await tester.pumpAndSettle();
     expect(find.text('Coming soon'), findsOneWidget);
   });

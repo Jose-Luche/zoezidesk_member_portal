@@ -64,11 +64,19 @@ The web dashboard prints `$daysLeft` from the same float calculation, so it
 can show values like "12.208333 days remaining". Not changed (web is out of
 scope).
 
-## B2. Idempotency keys ⏳ (Feature 6)
+## B2. Idempotency keys ✅ (Feature 6)
 
-Middleware honouring an `Idempotency-Key` header on member write endpoints.
-It stores key, member, route and response for 24 h and replays the stored
-response on a repeat. Needs an additive `api_idempotency_keys` table.
+Commit `78df8ae` on `mobile-api`. `App\Http\Middleware\IdempotentRequest` plus
+the additive migration `2026_10_23_000001_create_api_idempotency_keys_table`
+(**run `php artisan migrate` when deploying**). Attached to class book and
+cancel; reusable on any member write.
+
+- A write with an `Idempotency-Key` header stores its response; a repeat
+  with the same key and same request gets the stored response back
+  (`Idempotent-Replayed: true`) and does not run again.
+- Same key, different request: `422`. Same key while the first is still
+  running: `409`. `5xx` responses are not stored, so they can be retried.
+- Keys are per member and expire after 24 hours.
 
 ## B3a. Profile ✅ (Feature 4)
 
@@ -149,13 +157,32 @@ throws. Nothing uses it (the web has no share UI).
 
 - `GET /api/member/attendance?page=`: check-ins, newest first, paginated.
 
-## B4. Classes ⏳ (Feature 6)
+## B4. Classes ✅ (Feature 6)
 
-- `GET /api/member/classes?from=&to=` adds `my_booking`, ISO `date_iso` and
-  `updated_at`. The current fields and the 7-day default are kept.
-- `POST /api/member/classes/{id}/book` and `/cancel`, idempotent, with the
-  rules copied from `Livewire/Member/ClassTimetable::book/cancel` and a row
-  lock against overbooking.
+Commit `78df8ae` on `mobile-api` (`Api\Member\ClassesController`, tests in
+`ClassesTest.php`, 15 tests).
+
+- `GET /api/member/classes?from=Y-m-d&days=7` (days 1–14). Original fields
+  unchanged; adds `description`, `date_iso`, `starts_at`, `ends_at` (ISO with
+  offset), `my_booking`, `status`, `updated_at`, and top-level `from` / `to` /
+  `generated_at`.
+- `POST /api/member/classes/{id}/book` and `/cancel`, idempotent (B2).
+  Errors are `422` with a `code`: `unavailable`, `started`, `no_membership`,
+  `full`, plus `404 not_found` for another gym's class.
+
+Rules follow the web `ClassTimetable` (active membership, class scheduled,
+capacity, no cancelling after the start) with a row lock against
+overbooking and the same WhatsApp and push confirmations. Differences, each
+needed for queued offline bookings or fixing a web bug:
+
+| Rule | Web | API |
+|---|---|---|
+| Book a class that has already started | allowed | refused (`started`): a queued booking can arrive late |
+| Membership past its end date but still marked active | can book | refused (`no_membership`), as the front-desk scanner refuses it |
+| Book an already-booked class / cancel twice | error | success with `already_booked` / `already_cancelled` (safe retries) |
+| Rebook after cancelling | **fails** (unique index on class + member) | works: the cancelled row is reused |
+
+The web rebooking failure is a web bug and is not changed here.
 
 ## B5. Payments ⏳ (Feature 8)
 

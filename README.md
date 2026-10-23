@@ -64,6 +64,14 @@ Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
   storage, leaves nothing readable.
 - Cached screens show "Updated …". A warning appears when the data is older
   than 24 hours, or when a refresh failed or the phone is offline.
+- Writes made offline (class bookings and cancellations) go to an `Outbox`
+  table with an idempotency key, are shown as pending, and are sent oldest
+  first on app start, on resume and when connectivity returns
+  (`lib/core/sync/outbox_service.dart`). Network errors, timeouts, 409, 429
+  and 5xx retry with exponential backoff up to 5 minutes; other 4xx mark the
+  change failed with the server's reason. Connectivity is only a hint; a
+  failed request is the real signal.
+- Live class spot counts are shown only while online.
 - Android auto-backup is off so the database never leaves the device
   without its key.
 

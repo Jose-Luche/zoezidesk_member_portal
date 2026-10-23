@@ -9,6 +9,7 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/state/session_controller.dart';
 import '../../features/builder/screens/builder_screen.dart';
 import '../../features/builder/screens/workout_result_screen.dart';
+import '../../features/classes/screens/classes_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/design_gallery/design_gallery_screen.dart';
 import '../../features/more/more_screen.dart';
@@ -60,6 +61,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(path: Routes.home, builder: (_, _) => const DashboardScreen()),
           ]),
           StatefulShellBranch(routes: [
+            GoRoute(path: Routes.classes, builder: (_, _) => const ClassesScreen()),
+          ]),
+          StatefulShellBranch(routes: [
             GoRoute(path: Routes.builder, builder: (_, _) => const BuilderScreen()),
           ]),
           StatefulShellBranch(routes: [
@@ -77,7 +81,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'edit', builder: (_, _) => const EditProfileScreen()),
         ],
       ),
-      _comingSoon(Routes.classes, 'Classes'),
       _comingSoon(Routes.checkIn, 'Check-in'),
       _comingSoon(Routes.payments, 'Payments'),
       if (kDebugMode)
@@ -114,6 +117,11 @@ class _AppShell extends StatelessWidget {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month_rounded),
+            label: 'Classes',
           ),
           NavigationDestination(
             icon: Icon(Icons.fitness_center_outlined),

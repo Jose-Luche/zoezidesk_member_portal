@@ -206,7 +206,7 @@ class _DashboardContent extends StatelessWidget {
               QuickAction(
                 label: 'Classes',
                 icon: Icons.calendar_month_rounded,
-                onTap: () => context.push(Routes.classes),
+                onTap: () => context.go(Routes.classes),
               ),
               QuickAction(
                 label: 'Check-in',

@@ -75,6 +75,7 @@ class MoreScreen extends ConsumerWidget {
 Future<void> confirmLogout(BuildContext context, WidgetRef ref) async {
   final confirmed = await showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true, // cover the tab bar too
     builder: (sheetContext) {
       final text = Theme.of(sheetContext).textTheme;
       return Padding(

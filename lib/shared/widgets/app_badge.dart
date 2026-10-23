@@ -44,9 +44,13 @@ class AppBadge extends StatelessWidget {
             Icon(icon, size: AppSpace.md, color: color),
             const SizedBox(width: AppSpace.xs),
           ],
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color),
+          Flexible(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

@@ -1,15 +1,23 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:zoezidesk_member/core/network/dio_client.dart';
+import 'package:zoezidesk_member/core/network/retry_interceptor.dart';
 import 'package:zoezidesk_member/core/storage/local_data_wiper.dart';
 import 'package:zoezidesk_member/core/storage/session_storage.dart';
 import 'package:zoezidesk_member/core/utils/clock.dart';
 import 'package:zoezidesk_member/data/api/auth_api.dart';
 import 'package:zoezidesk_member/data/api/builder_api.dart';
+import 'package:zoezidesk_member/data/api/classes_api.dart';
 import 'package:zoezidesk_member/data/api/dashboard_api.dart';
 import 'package:zoezidesk_member/data/api/profile_api.dart';
 import 'package:zoezidesk_member/data/db/app_database.dart';
+import 'package:zoezidesk_member/data/sync/sync.dart';
 
 import 'fakes.dart';
 
@@ -18,6 +26,8 @@ class MockDashboardApi extends Mock implements DashboardApi {}
 class MockProfileApi extends Mock implements ProfileApi {}
 
 class MockBuilderApi extends Mock implements BuilderApi {}
+
+class MockClassesApi extends Mock implements ClassesApi {}
 
 AppDatabase memoryDatabase() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -41,6 +51,11 @@ class TestEnv {
   final dashboardApi = MockDashboardApi();
   final profileApi = MockProfileApi();
   final builderApi = MockBuilderApi();
+  final classesApi = MockClassesApi();
+
+  /// HTTP for code that uses dio directly (the outbox).
+  final http = FakeAdapter();
+  final connectivity = StreamController<List<ConnectivityResult>>.broadcast();
   DateTime now = testNow;
 
   List<Override> get overrides => [
@@ -50,6 +65,14 @@ class TestEnv {
         dashboardApiProvider.overrideWithValue(dashboardApi),
         profileApiProvider.overrideWithValue(profileApi),
         builderApiProvider.overrideWithValue(builderApi),
+        classesApiProvider.overrideWithValue(classesApi),
+        connectivityChangesProvider.overrideWithValue(connectivity.stream),
+        dioProvider.overrideWith((ref) {
+          final dio = Dio(BaseOptions(baseUrl: 'https://api.test'));
+          dio.httpClientAdapter = http;
+          dio.interceptors.add(RetryInterceptor(dio, maxRetries: 0, sleep: (_) async {}));
+          return dio;
+        }),
         clockProvider.overrideWithValue(() => now),
         imageCacheClearerProvider.overrideWithValue(() async => imageCacheCleared++),
       ];
@@ -64,7 +87,10 @@ class TestEnv {
     when(() => dashboardApi.memberCard()).thenAnswer((_) async => card ?? testCardJson);
   }
 
-  Future<void> dispose() => db.close();
+  Future<void> dispose() async {
+    await connectivity.close();
+    await db.close();
+  }
 }
 
 Map<String, dynamic> dashboardJson({
@@ -220,6 +246,30 @@ Map<String, dynamic> guidedWorkoutJson({
             guidedExerciseJson(2, 'Incline Dumbbell Press', 2, plateau: true),
             guidedExerciseJson(3, 'Push-up', 3),
           ],
+    };
+
+/// A class in local time (tests run against [testNow]).
+Map<String, dynamic> classJson(
+  int id, {
+  String name = 'HIIT Blast',
+  int day = 23,
+  int hour = 18,
+  int spotsLeft = 6,
+  int capacity = 10,
+  bool booked = false,
+}) =>
+    {
+      'id': id,
+      'class_name': name,
+      'color': '#F97316',
+      'instructor': 'Coach Amina',
+      'description': 'Short, hard intervals.',
+      'starts_at': DateTime(2026, 10, day, hour).toIso8601String(),
+      'ends_at': DateTime(2026, 10, day, hour + 1).toIso8601String(),
+      'capacity': capacity,
+      'spots_left': spotsLeft,
+      'is_full': spotsLeft == 0,
+      'my_booking': booked ? 'booked' : null,
     };
 
 const testCardJson = {

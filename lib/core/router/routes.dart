@@ -3,6 +3,7 @@ abstract final class Routes {
   static const login = '/login';
   static const otp = '/login/otp';
   static const home = '/home';
+  static const classes = '/classes';
   static const builder = '/builder';
   static const builderWorkout = '/builder/workout';
   static const more = '/more';
@@ -13,7 +14,6 @@ abstract final class Routes {
 
   // Destinations of later features. Until each lands they open a
   // "coming soon" screen, so the dashboard's quick actions already work.
-  static const classes = '/classes';
   static const checkIn = '/check-in';
   static const payments = '/payments';
 

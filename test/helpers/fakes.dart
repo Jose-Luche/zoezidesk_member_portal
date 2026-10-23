@@ -47,7 +47,8 @@ class FakeAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     requests.add(options);
-    final next = responses.removeAt(0);
+    // Nothing queued behaves like being offline.
+    final next = responses.isEmpty ? DioExceptionType.connectionError : responses.removeAt(0);
     if (next is DioExceptionType) {
       throw DioException(requestOptions: options, type: next);
     }

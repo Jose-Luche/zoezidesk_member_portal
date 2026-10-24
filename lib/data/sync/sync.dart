@@ -8,10 +8,12 @@ import '../../core/network/dio_client.dart';
 import '../../core/sync/outbox_service.dart';
 import '../../core/utils/clock.dart';
 import '../api/classes_api.dart';
+import '../api/nutrition_api.dart';
 import '../api/workouts_api.dart';
 import '../db/app_database.dart';
 import '../db/encrypted_cache.dart';
 import '../repositories/classes_repository.dart';
+import '../repositories/nutrition_repository.dart';
 import '../repositories/workouts_repository.dart';
 
 final outboxServiceProvider = Provider<OutboxService>((ref) {
@@ -55,6 +57,22 @@ final workoutsRepositoryProvider = Provider<WorkoutsRepository>((ref) {
   return repo;
 });
 
+final nutritionRepositoryProvider = Provider<NutritionRepository>((ref) {
+  final outbox = ref.watch(outboxServiceProvider);
+  final repo = NutritionRepository(
+    db: ref.watch(appDatabaseProvider),
+    cache: ref.watch(encryptedCacheProvider),
+    api: ref.watch(nutritionApiProvider),
+    outbox: outbox,
+    clock: ref.watch(clockProvider),
+  );
+  outbox
+    ..register(DiaryOutboxKind.put, repo.outboxHandler)
+    ..register(DiaryOutboxKind.delete, repo.outboxHandler)
+    ..coalesce(DiaryOutboxKind.put);
+  return repo;
+});
+
 /// Connectivity changes. Only a hint to try sending again: a failed request
 /// is the real signal. Overridden in tests.
 final connectivityChangesProvider = Provider<Stream<List<ConnectivityResult>>>(
@@ -86,6 +104,7 @@ final syncRunnerProvider = Provider.autoDispose<SyncRunner>((ref) {
   // Create every feature that registers outbox handlers before sending.
   ref.watch(classesRepositoryProvider);
   ref.watch(workoutsRepositoryProvider);
+  ref.watch(nutritionRepositoryProvider);
   final runner = SyncRunner(ref.watch(outboxServiceProvider), ref.watch(connectivityChangesProvider));
   ref.onDispose(runner.dispose);
   return runner;

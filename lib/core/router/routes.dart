@@ -13,6 +13,11 @@ abstract final class Routes {
   /// exercise adds it to that session.
   static const exercises = '/workouts/exercises';
   static String workoutSession(String clientId) => '/workouts/session/$clientId';
+  static const nutrition = '/nutrition';
+  static const nutritionGoal = '/nutrition/goal';
+
+  /// `extra`: `({DateTime day, String meal})`.
+  static const nutritionAdd = '/nutrition/add';
   static const builderWorkout = '/builder/workout';
   static const more = '/more';
   static const profile = '/profile';

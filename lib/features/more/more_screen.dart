@@ -50,6 +50,26 @@ class MoreScreen extends ConsumerWidget {
           Card(
             child: Column(
               children: [
+                ListTile(
+                  leading: const Icon(Icons.restaurant_rounded),
+                  title: const Text('Nutrition'),
+                  subtitle: const Text('Food diary and daily goal'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push(Routes.nutrition),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.receipt_long_rounded),
+                  title: const Text('Payments'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push(Routes.payments),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpace.md),
+          Card(
+            child: Column(
+              children: [
                 if (kDebugMode)
                   ListTile(
                     leading: const Icon(Icons.palette_rounded),

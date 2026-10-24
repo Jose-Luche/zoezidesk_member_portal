@@ -14,6 +14,9 @@ import '../../features/classes/screens/classes_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/design_gallery/design_gallery_screen.dart';
 import '../../features/more/more_screen.dart';
+import '../../features/nutrition/screens/add_food_screen.dart';
+import '../../features/nutrition/screens/nutrition_goal_screen.dart';
+import '../../features/nutrition/screens/nutrition_screen.dart';
 import '../../features/payments/screens/checkout_screen.dart';
 import '../../features/payments/screens/payments_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
@@ -77,6 +80,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       // Outside the shell so it covers the bottom bar while editing.
       GoRoute(path: Routes.builder, builder: (_, _) => const BuilderScreen()),
+      GoRoute(
+        path: Routes.nutrition,
+        builder: (_, _) => const NutritionScreen(),
+        routes: [
+          GoRoute(path: 'goal', builder: (_, _) => const NutritionGoalScreen()),
+          GoRoute(
+            path: 'add',
+            redirect: (_, state) => state.extra is ({DateTime day, String meal}) ? null : Routes.nutrition,
+            builder: (_, state) {
+              final args = state.extra! as ({DateTime day, String meal});
+              return AddFoodScreen(day: args.day, meal: args.meal);
+            },
+          ),
+        ],
+      ),
       GoRoute(path: Routes.workoutHistory, builder: (_, _) => const WorkoutHistoryScreen()),
       GoRoute(path: Routes.workoutRecords, builder: (_, _) => const RecordsScreen()),
       GoRoute(

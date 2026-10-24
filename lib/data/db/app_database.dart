@@ -174,6 +174,49 @@ class WorkoutSets extends Table {
   Set<Column<Object>> get primaryKey => {clientId};
 }
 
+/// The food catalogue (small, global), for logging food offline.
+@DataClassName('FoodItem')
+class FoodItems extends Table {
+  IntColumn get id => integer()();
+  TextColumn get name => text()();
+  TextColumn get nameSwahili => text().nullable()();
+  TextColumn get category => text()();
+  RealColumn get caloriesPer100g => real()();
+  RealColumn get proteinPer100g => real()();
+  RealColumn get carbsPer100g => real()();
+  RealColumn get fatPer100g => real()();
+  RealColumn get defaultServingG => real().withDefault(const Constant(100))();
+  TextColumn get servingDescription => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Food diary entries: from the server, or logged here (possibly offline)
+/// and sent through the outbox. Addressed by [clientId], which the server
+/// stores too.
+@DataClassName('DiaryEntry')
+class DiaryEntries extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get clientId => text().unique()();
+  IntColumn get serverId => integer().nullable()();
+  IntColumn get foodId => integer()();
+  TextColumn get foodName => text()();
+  RealColumn get quantityG => real()();
+
+  /// breakfast, lunch, dinner, snack or post_workout
+  TextColumn get mealType => text()();
+  DateTimeColumn get loggedDate => dateTime()();
+  RealColumn get calories => real()();
+  RealColumn get protein => real()();
+  RealColumn get carbs => real()();
+  RealColumn get fat => real()();
+
+  /// synced, pending or failed
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
+  TextColumn get syncError => text().nullable()();
+}
+
 /// When each cached list was last refreshed from the server.
 class SyncMeta extends Table {
   TextColumn get key => text()();
@@ -186,13 +229,14 @@ class SyncMeta extends Table {
 @DriftDatabase(tables: [
   CachedDocuments, ClassSessions, Outbox, SyncMeta, Attendances, Payments,
   LibraryExercises, WorkoutSessions, WorkoutExercises, WorkoutSets,
+  FoodItems, DiaryEntries,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
       : super(executor ?? driftDatabase(name: 'zoezi_member'));
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -213,6 +257,11 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(workoutSessions);
             await m.createTable(workoutExercises);
             await m.createTable(workoutSets);
+          }
+          // v6 adds the food catalogue and diary tables.
+          if (from < 6) {
+            await m.createTable(foodItems);
+            await m.createTable(diaryEntries);
           }
         },
       );

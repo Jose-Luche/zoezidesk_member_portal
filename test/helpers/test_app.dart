@@ -19,6 +19,7 @@ import 'package:zoezidesk_member/data/api/builder_api.dart';
 import 'package:zoezidesk_member/data/api/checkout_api.dart';
 import 'package:zoezidesk_member/data/api/classes_api.dart';
 import 'package:zoezidesk_member/data/api/dashboard_api.dart';
+import 'package:zoezidesk_member/data/api/nutrition_api.dart';
 import 'package:zoezidesk_member/data/api/payments_api.dart';
 import 'package:zoezidesk_member/data/api/profile_api.dart';
 import 'package:zoezidesk_member/data/api/workouts_api.dart';
@@ -44,6 +45,8 @@ class MockPaymentsApi extends Mock implements PaymentsApi {}
 class MockCheckoutApi extends Mock implements CheckoutApi {}
 
 class MockWorkoutsApi extends Mock implements WorkoutsApi {}
+
+class MockNutritionApi extends Mock implements NutritionApi {}
 
 class FakeBrightness implements BrightnessControl {
   final calls = <String>[];
@@ -82,6 +85,7 @@ class TestEnv {
   final paymentsApi = MockPaymentsApi();
   final checkoutApi = MockCheckoutApi();
   final workoutsApi = MockWorkoutsApi();
+  final nutritionApi = MockNutritionApi();
 
   /// Links the app asked the phone to open; [openUrlResult] is the answer.
   final openedUrls = <Uri>[];
@@ -105,6 +109,7 @@ class TestEnv {
         paymentsApiProvider.overrideWithValue(paymentsApi),
         checkoutApiProvider.overrideWithValue(checkoutApi),
         workoutsApiProvider.overrideWithValue(workoutsApi),
+        nutritionApiProvider.overrideWithValue(nutritionApi),
         checkoutPollingProvider.overrideWithValue(
           (every: const Duration(seconds: 1), upTo: const Duration(seconds: 5)),
         ),
@@ -487,4 +492,71 @@ Map<String, dynamic> workoutSummaryJson(
 Map<String, dynamic> workoutHistoryJson(List<Map<String, dynamic>> rows, {int page = 1, int lastPage = 1}) => {
       'data': rows,
       'meta': {'current_page': page, 'last_page': lastPage, 'per_page': 20, 'total': rows.length},
+    };
+
+Map<String, dynamic> foodJson(
+  int id,
+  String name, {
+  String? swahili,
+  String category = 'grains',
+  num calories = 360,
+  num protein = 8.1,
+  num carbs = 77,
+  num fat = 1.2,
+  num serving = 250,
+  String? servingDescription,
+}) =>
+    {
+      'id': id,
+      'name': name,
+      'name_swahili': swahili,
+      'category': category,
+      'per_100g': {'calories': calories, 'protein': protein, 'carbs': carbs, 'fat': fat},
+      'default_serving_g': serving,
+      'serving_description': servingDescription,
+    };
+
+Map<String, dynamic> foodsJson() => {
+      'foods': [
+        foodJson(1, 'Ugali', swahili: 'Ugali', servingDescription: '1 plate = 250g'),
+        foodJson(2, 'Chapati', swahili: 'Chapati', calories: 300, protein: 7, carbs: 45, fat: 10, serving: 80,
+            servingDescription: '1 chapati = 80g'),
+        foodJson(3, 'Sukuma wiki', swahili: 'Sukuma wiki', category: 'vegetables', calories: 35, protein: 3, carbs: 6, fat: 0.5, serving: 100),
+      ],
+    };
+
+Map<String, dynamic> diaryEntryJson(
+  String clientId, {
+  int id = 1,
+  int foodId = 1,
+  String food = 'Ugali',
+  num grams = 250,
+  String meal = 'lunch',
+  String date = '2026-10-23',
+  num calories = 900,
+}) =>
+    {
+      'id': id,
+      'client_id': clientId,
+      'food_id': foodId,
+      'food_name': food,
+      'quantity_g': grams,
+      'meal_type': meal,
+      'logged_date': date,
+      'calories': calories,
+      'protein': 20.3,
+      'carbs': 192.5,
+      'fat': 3,
+    };
+
+const goalJson = {'goal_type': 'maintenance', 'calories': 2300, 'protein': 115, 'carbs': 288, 'fat': 77};
+
+Map<String, dynamic> goalSettingsJson({Map<String, dynamic>? goal = goalJson}) => {
+      'goal': goal,
+      'presets': [
+        {'goal_type': 'muscle_gain', 'name': 'Muscle Gain', 'calories': 2800, 'protein': 180, 'carbs': 320, 'fat': 78},
+        {'goal_type': 'fat_loss', 'name': 'Fat Loss', 'calories': 2000, 'protein': 150, 'carbs': 200, 'fat': 67},
+        {'goal_type': 'maintenance', 'name': 'Maintenance', 'calories': 2300, 'protein': 115, 'carbs': 288, 'fat': 77},
+        {'goal_type': 'general_health', 'name': 'General Health', 'calories': 2200, 'protein': 110, 'carbs': 275, 'fat': 73},
+      ],
     };

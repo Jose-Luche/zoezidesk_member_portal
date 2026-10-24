@@ -80,6 +80,9 @@ Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
   only the newest copy per session (`OutboxService.coalesce`), and the
   server applies it by the app's ids, so resending is harmless. The
   exercise library is cached for the offline picker.
+- The food diary works the same way: entries are saved locally and each is
+  sent as a PUT by its app id (`diary_put`, coalesced); the food catalogue
+  and the last 7 days are cached. The nutrition goal is changed online only.
 - Paying for a plan (M-Pesa STK push) is online only and never queued: a
   payment must not be sent late or twice. Each attempt carries an
   idempotency key, so a retry after a dropped connection gets the first

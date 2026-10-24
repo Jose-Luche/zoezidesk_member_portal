@@ -315,6 +315,41 @@ Rules that differ from the web (decided for Feature 10):
 
 Not in the app yet: history filters, workout analytics and muscle progress.
 
+## B9. Food diary ✅ (Feature 11, commit `f3cbdf3`)
+
+New controller `Api\Member\NutritionDiaryController`, matching the web
+Nutrition page (`NutritionLog`, `NutritionGoals`). The older
+`/nutrition/*` routes are left as they were.
+
+- `GET /api/member/diary/foods`: the whole active catalogue (44 Kenyan foods
+  in the seeder) with macros per 100 g, default serving and description, so
+  the app can search and log offline.
+- `GET /api/member/diary?from=&to=`: entries per day (at most 31 days;
+  default today) with `client_id`, macros, and the active goal. Web entries
+  get a `client_id` the first time the app reads them.
+- `PUT /api/member/diary/logs/{client_id}` `{food_id, quantity_g, meal_type,
+  logged_date}`: create or change one entry, so a retry changes nothing.
+  Macros are worked out from the food per 100 g as on the web, also when the
+  amount changes (the model only does it on create). No future days, as on
+  the web; at most a year back. 422 when the food is no longer in the list
+  or the id belongs to another member.
+- `DELETE /api/member/diary/logs/{client_id}`: own entries only; repeating
+  it is fine.
+- `GET /api/member/diary/goal`: the active goal and the web's four presets.
+  `PUT /api/member/diary/goal` replaces the active goal (1,200 to 6,000 kcal,
+  as the existing API's minimum). Online only in the app.
+
+Migration `2026_10_24_000002_add_client_uuid_to_food_logs`: nullable, unique
+`client_uuid` (additive).
+
+The app keeps the catalogue and the last 7 days on the phone, logs food
+offline through the outbox (newest change per entry only), and shows days
+from the server with unsent entries kept until they arrive.
+
+Differences from the web: the meal is suggested from the time of day (the web
+always starts at lunch); and the app shows a "Payments" entry in More as
+well as Nutrition.
+
 ## B6. `changes_since` ⏳
 
 An optional `?since=<ISO8601>` on list endpoints where it is cheap, so the
@@ -343,6 +378,21 @@ newest *active* membership. Eager loading and `whereHas` are covered by tests.
   refresh tokens are possible later if you want them.
 - **Offline logout:** if the member logs out without a connection, the app
   wipes local data but the server token stays valid until it is revoked.
+
+## Found during Feature 11, not changed (ask before fixing)
+
+- **Security:** the web `Livewire\Member\NutritionLog::deleteLog($logId)`
+  deletes any food log by id without checking it belongs to the member, so
+  a member can delete other members' entries by calling the action with
+  another id.
+- The old API `DELETE /api/member/nutrition/logs/{id}` always fails:
+  `NutritionApiController` does not extend `Controller`, so `authorize()`
+  does not exist (and there is no `FoodLog` policy). The app uses the new
+  diary endpoints instead.
+- Food data: for 38 of the 44 seeded foods the default serving size does
+  not match the serving description (Chapati: 100 g, "1 chapati = 80g"),
+  so "1 serving" in the app and on the web uses the wrong amount. A fix in
+  `KenyanFoodsSeeder` (or the data) is needed.
 
 ## Web bugs fixed (2026-10-24, on `mobile-api`)
 

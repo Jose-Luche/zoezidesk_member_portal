@@ -8,6 +8,27 @@ you deploy.
 
 Status: ✅ done on `mobile-api` · ⏳ planned (feature it ships with) · ❓ needs a decision
 
+## Deploying `mobile-api` (before sharing the app)
+
+The release APK talks to `https://gym.zoezidesk.com/api`, so most of the app
+only works once this branch is live there.
+
+1. Back up the production database.
+2. Merge `mobile-api` into `main` and deploy as usual (`composer install
+   --no-dev`, `php artisan optimize`).
+3. `php artisan migrate --force`. Four additive migrations:
+   `2026_10_23_000001` (idempotency keys), `2026_10_24_000001` and
+   `_000002` (nullable `client_uuid` columns), `_000003` (fixes foods'
+   default serving size from their descriptions).
+4. `.env`: `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_WORKOUT_MODEL`) for
+   the workout builder; `MPESA_ENV=live` with the live M-Pesa credentials
+   (`MPESA_BASE_URL` only to override the Daraja host).
+5. Make sure the scheduler cron runs every minute
+   (`* * * * * php /path/to/artisan schedule:run`). The new
+   `payments:reconcile-stk` (every 5 minutes) completes M-Pesa payments
+   whose callback never arrived, for members and for gym subscriptions.
+6. Check: `GET /api/member/payments` without a token returns 401 (not 404).
+
 ## B1. OTP login hardening ✅ (Feature 2)
 
 Commit `a446cc4` on `mobile-api`. Controller:
@@ -349,8 +370,8 @@ Not in the app yet: history filters.
 - The streak was broken on the web (at most 1): on Carbon 3
   `diffInDays()` is a signed float, so it never equalled 1. It now counts
   consecutive days with a finished workout, ending today or yesterday,
-  once per day. (The old `/workout-stats/streak` API has the same bug; the
-  app does not use it and it was left as it was.)
+  once per day. The older `/workout-stats/streak` API and the rest-day
+  recommendation had the same bug; see "Older workout APIs" below.
 - `GET /api/member/workouts/progress`: that summary plus
   `MuscleAnalyticsService::overview()` (status, sets this week against the
   goal's target, 8 weekly set counts and strength change per muscle).
@@ -417,11 +438,32 @@ refused check-in. It now uses
 `->ofMany(['id' => 'max'], fn ($q) => $q->where('status', 'active'))`, the
 newest *active* membership. Eager loading and `whereHas` are covered by tests.
 
+## ✅ Fixed: older workout APIs (commits `4ed8d65`, `54f5023`)
+
+The app does not use these yet; they were fixed so they work when it does.
+Tests: `tests/Feature/Api/Member/WorkoutStatsTest.php`, `NotesTest.php`.
+
+- `/workout-stats/*`, `/recovery/*`, `/progress/*` and the workout-note
+  routes read the member from the web session guard, which is empty for an
+  app token, so every one returned 500. They now use the token's member.
+- Leaving out optional inputs (`from`/`to`, `exercise_id`, `tags`, optional
+  recovery fields) caused 500s. Notes and recovery logs could be attached to
+  another member's workout; now only to your own. Editing and deleting
+  workout notes and recovery logs called `authorize()`, which the Laravel 11
+  base controller no longer has (now `Gate::authorize`, owner only).
+- **Notes routes:** `PUT`/`DELETE /api/member/notes/{id}` were defined twice,
+  for two different things: member notes (closures, registered first, so
+  they win) and workout notes (`ProgressController`, never reached). Member
+  notes keep that path unchanged. Workout notes are now edited and deleted at
+  `PUT`/`DELETE /api/member/workout-notes/{id}`.
+- **Streak:** `/workout-stats/streak` returned at most 1 (the Carbon 3 bug
+  above) and went by `created_at`. `current_streak` now comes from
+  `WorkoutProgressService::streak()`, matching the web Analytics page;
+  `longest_streak` counts each workout day once. The rest-day recommendation
+  ("rest after 7 days in a row") uses the same streak, so it can now trigger.
+
 ## Open questions ❓
 
-- **Duplicate notes routes:** `PUT`/`DELETE /api/member/notes/{id}` are each
-  defined twice in `routes/api.php` (closures, then `ProgressController`); the
-  later definition wins. Which behaviour is intended?
 - **Refresh tokens:** Sanctum tokens never expire (`sanctum.expiration` is
   null). The app treats any `401` as logout. Short-lived access tokens with
   refresh tokens are possible later if you want them.

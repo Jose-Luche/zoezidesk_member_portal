@@ -149,9 +149,7 @@ falls back to the step-by-step form, as it does today. Each use is billed
 by Anthropic to the key's account. See the cost note in the Feature 5
 summary.
 
-**Also noticed, not changed:** `shareTemplate` builds a URL with
-`route('member.workout-templates.import')`, which does not exist, so it
-throws. Nothing uses it (the web has no share UI).
+`shareTemplate` was broken (a link to a missing route); fixed in `fd78fd3`.
 
 ## B3b. Attendance ✅ (Feature 7)
 
@@ -186,7 +184,7 @@ needed for queued offline bookings or fixing a web bug:
 | Book an already-booked class / cancel twice | error | success with `already_booked` / `already_cancelled` (safe retries) |
 | Rebook after cancelling | **fails** (unique index on class + member) | works: the cancelled row is reused |
 
-The web rebooking failure is a web bug and is not changed here.
+The web rebooking failure was fixed in `6b48f55`.
 
 ## B5. Payments ✅ (Feature 8, commit `a00e2f2`)
 
@@ -308,9 +306,8 @@ Rules that differ from the web (decided for Feature 10):
 
 - "Repeat" copies the exercises but not the sets; the last time's numbers
   prefill each new set instead. The web copies the old sets as if done.
-- A "Legs" workout offers quads, hamstrings, glutes and calves exercises.
-  On the web the Legs picker is empty, because no exercise is tagged
-  `legs` (a web bug, not changed).
+- A "Legs" workout offers quads, hamstrings, glutes and calves exercises,
+  as the web now does too (`05e4022`).
 - Only workouts in progress are edited in the app; finished ones are
   read-only there.
 - If the same in-progress session were edited on the web and in the app at
@@ -347,16 +344,27 @@ newest *active* membership. Eager loading and `whereHas` are covered by tests.
 - **Offline logout:** if the member logs out without a connection, the app
   wipes local data but the server token stays valid until it is revoked.
 
-## Web-only issues noticed (not changed)
+## Web bugs fixed (2026-10-24, on `mobile-api`)
 
-- The workout Legs picker is empty: sessions accept `legs` but exercises
-  are tagged by part (quads, hamstrings, glutes, calves).
-- `Exercise::scopeSearch` uses an ungrouped `orWhere`, so the old
-  `/api/member/exercises?search=` can return other gyms' exercises.
+Fixed at your request, one commit each, with tests:
 
-- `/member/member/classes`: the route has a doubled `member` prefix.
-- `/member/workouts/history` is registered after `/member/workouts/{session}`
-  and is shadowed by it.
+| Bug | Fix | Commit |
+|---|---|---|
+| Class timetable at `/member/member/classes` (doubled prefix); push and service-worker links to `/member/classes` were 404 | Now `/member/classes`; the old URL redirects (301) | `106b80c` |
+| `/member/workouts/history` caught by `/member/workouts/{session}` (404) | Registered first; session ids must be numeric | `106b80c` |
+| Rebooking a cancelled class failed (unique booking per member and class) | Reuses the cancelled row, as the API does | `6b48f55` |
+| `shareTemplate` linked to a route that does not exist, so it always failed | Returns the code only; keeps an existing code; templates only | `fd78fd3` |
+| The Legs workout picker was empty | Shows quads, hamstrings, glutes and calves | `05e4022` |
+
+Correction: the earlier note that `Exercise::scopeSearch` leaks other gyms'
+exercises was wrong. Laravel wraps a local scope's conditions in brackets
+when they contain `orWhere`, so the gym filter still applies. Nothing was
+changed there.
+
+Still failing, not caused by this work: `WorkoutWorkflowTest` asks for the
+old exercise category `push_day`, which a migration renamed; the Breeze
+auth tests (login, registration, password reset) expect routes this app
+does not have.
 
 ## Running the backend tests
 

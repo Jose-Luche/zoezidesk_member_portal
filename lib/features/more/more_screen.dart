@@ -108,10 +108,13 @@ Future<void> confirmLogout(BuildContext context, WidgetRef ref) async {
   final confirmed = await showModalBottomSheet<bool>(
     context: context,
     useRootNavigator: true, // cover the tab bar too
+    // Taller with the unsent-changes warning: size to the content and
+    // scroll on short screens or with large text.
+    isScrollControlled: true,
     builder: (sheetContext) {
       final text = Theme.of(sheetContext).textTheme;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpace.md, 0, AppSpace.md, AppSpace.lg),
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.lg, AppSpace.md, AppSpace.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

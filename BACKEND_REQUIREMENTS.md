@@ -281,9 +281,14 @@ leave it unset in production.
 - Payments completed by the query have no M-Pesa receipt number (the
   query does not return one); the confirmation message leaves it out.
 
-Not changed (ask first): the gym subscription payments
-(`GymDeskCallbackController`, `GymDeskMpesaService`) have the same
-unlocked check-then-update and no query fallback.
+The same fix covers ZoeziDesk's own subscription payments (commit
+`8dbb67f`): `GymDeskPaymentSettler` locks and settles them
+(a duplicated callback used to add an extra month or year), the
+`GymDeskCallbackController` uses it, `GymDeskMpesaService::stkQuery()`
+shares the query code (`QueriesStkPush`), the scheduled command checks
+them too, and the billing page's "Check status" asks Safaricom after a
+minute. That page also now looks up only the signed-in gym's payment (the
+id came from the browser).
 
 ## B8. Workout logging ✅ (Feature 10, commits `ba3984b`, `50adec3`)
 

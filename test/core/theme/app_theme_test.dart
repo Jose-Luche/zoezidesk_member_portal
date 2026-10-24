@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:zoezidesk_member/core/theme/app_theme.dart';
 import 'package:zoezidesk_member/core/theme/app_tokens.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
-
   for (final (name, theme) in [('dark', AppTheme.dark), ('light', AppTheme.light)]) {
     group('$name theme', () {
       test('primary is orange with dark text', () {
@@ -28,8 +25,8 @@ void main() {
 
       test('headings use Barlow Condensed and body uses Barlow', () {
         expect(theme.textTheme.headlineMedium!.fontFamily,
-            startsWith('BarlowCondensed'));
-        expect(theme.textTheme.bodyMedium!.fontFamily, startsWith('Barlow_'));
+            equals(AppFonts.heading));
+        expect(theme.textTheme.bodyMedium!.fontFamily, AppFonts.body);
       });
 
       test('filled buttons are at least 48dp with 8dp radius', () {

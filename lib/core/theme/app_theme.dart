@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_tokens.dart';
 
@@ -12,16 +11,16 @@ abstract final class AppTheme {
   /// Full type scale. Headings use Barlow Condensed, everything else Barlow.
   /// Body styles never go below 16sp.
   static TextTheme textTheme(Color text, Color muted) {
-    TextStyle heading(double size, FontWeight weight) => GoogleFonts.getFont(
-          AppFonts.heading,
+    TextStyle heading(double size, FontWeight weight) => TextStyle(
+          fontFamily: AppFonts.heading,
           fontSize: size,
           fontWeight: weight,
           height: 1.15,
           color: text,
         );
     TextStyle body(double size, FontWeight weight, {Color? color}) =>
-        GoogleFonts.getFont(
-          AppFonts.body,
+        TextStyle(
+          fontFamily: AppFonts.body,
           fontSize: size,
           fontWeight: weight,
           height: 1.4,
@@ -95,7 +94,7 @@ abstract final class AppTheme {
       brightness: brightness,
       colorScheme: scheme,
       textTheme: text,
-      fontFamily: GoogleFonts.getFont(AppFonts.body).fontFamily,
+      fontFamily: AppFonts.body,
       scaffoldBackgroundColor: p.background,
       canvasColor: p.background,
       dividerColor: p.border,

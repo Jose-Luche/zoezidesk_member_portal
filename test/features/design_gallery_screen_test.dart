@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:zoezidesk_member/core/theme/app_theme.dart';
 import 'package:zoezidesk_member/core/theme/app_tokens.dart';
 import 'package:zoezidesk_member/core/theme/theme_mode_controller.dart';
@@ -20,8 +19,6 @@ class _ThemedGallery extends ConsumerWidget {
 }
 
 void main() {
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
-
   Future<void> pumpGallery(WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: _ThemedGallery()));
     await tester.pumpAndSettle();

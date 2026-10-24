@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:zoezidesk_member/app.dart';
@@ -13,8 +12,6 @@ import 'package:zoezidesk_member/data/repositories/dashboard_repository.dart';
 import '../../helpers/test_app.dart';
 
 void main() {
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
-
   late TestEnv env;
 
   setUp(() async {

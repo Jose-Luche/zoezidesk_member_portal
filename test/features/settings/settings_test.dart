@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:zoezidesk_member/app.dart';
 import 'package:zoezidesk_member/core/router/app_router.dart';
 import 'package:zoezidesk_member/core/router/routes.dart';
@@ -14,8 +13,6 @@ import '../../helpers/pump.dart';
 import '../../helpers/test_app.dart';
 
 void main() {
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
-
   late TestEnv env;
   ProviderContainer? current;
 
@@ -113,7 +110,7 @@ void main() {
         ));
     await settle(tester);
 
-    await tester.ensureVisible(find.text('Log out'));
+    await tester.scrollUntilVisible(find.text('Log out'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Log out'));
     await settle(tester);
@@ -126,7 +123,7 @@ void main() {
 
   settingsTest('logging out with nothing unsent has no warning', (tester) async {
     await openSettings(tester);
-    await tester.ensureVisible(find.text('Log out'));
+    await tester.scrollUntilVisible(find.text('Log out'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Log out'));
     await settle(tester);

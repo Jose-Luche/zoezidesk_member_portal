@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:zoezidesk_member/app.dart';
 
@@ -12,7 +11,6 @@ import '../../helpers/test_app.dart';
 
 void main() {
   setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
     registerFallbackValue(DateTime(2026));
   });
 
@@ -240,6 +238,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final action = find.descendant(of: find.byType(Card), matching: find.text('Classes'));
+    await tester.scrollUntilVisible(action, 200, scrollable: find.byType(Scrollable).first);
     await tester.ensureVisible(action);
     await tester.pumpAndSettle();
     await tester.tap(action);

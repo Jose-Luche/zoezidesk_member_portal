@@ -379,24 +379,9 @@ newest *active* membership. Eager loading and `whereHas` are covered by tests.
 - **Offline logout:** if the member logs out without a connection, the app
   wipes local data but the server token stays valid until it is revoked.
 
-## Found during Feature 11, not changed (ask before fixing)
-
-- **Security:** the web `Livewire\Member\NutritionLog::deleteLog($logId)`
-  deletes any food log by id without checking it belongs to the member, so
-  a member can delete other members' entries by calling the action with
-  another id.
-- The old API `DELETE /api/member/nutrition/logs/{id}` always fails:
-  `NutritionApiController` does not extend `Controller`, so `authorize()`
-  does not exist (and there is no `FoodLog` policy). The app uses the new
-  diary endpoints instead.
-- Food data: for 38 of the 44 seeded foods the default serving size does
-  not match the serving description (Chapati: 100 g, "1 chapati = 80g"),
-  so "1 serving" in the app and on the web uses the wrong amount. A fix in
-  `KenyanFoodsSeeder` (or the data) is needed.
-
 ## Web bugs fixed (2026-10-24, on `mobile-api`)
 
-Fixed at your request, one commit each, with tests:
+Fixed at your request, with tests (the last three were found during Feature 11):
 
 | Bug | Fix | Commit |
 |---|---|---|
@@ -405,6 +390,9 @@ Fixed at your request, one commit each, with tests:
 | Rebooking a cancelled class failed (unique booking per member and class) | Reuses the cancelled row, as the API does | `6b48f55` |
 | `shareTemplate` linked to a route that does not exist, so it always failed | Returns the code only; keeps an existing code; templates only | `fd78fd3` |
 | The Legs workout picker was empty | Shows quads, hamstrings, glutes and calves | `05e4022` |
+| **Security:** the web food diary deleted any member's entry by id | Own entries only | `ec31657` |
+| The old API `DELETE /nutrition/logs/{id}` always failed (no `authorize()`) | Looks the entry up among the member's own | `8294b01` |
+| Foods' default serving stayed at 100 g (servings were only in the description) | `Food` sets it from "… = 80g" on save; a data migration fixes existing foods | `37f1dc9` |
 
 Correction: the earlier note that `Exercise::scopeSearch` leaks other gyms'
 exercises was wrong. Laravel wraps a local scope's conditions in brackets

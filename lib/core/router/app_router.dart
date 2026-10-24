@@ -22,6 +22,7 @@ import '../../features/payments/screens/payments_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/profile/screens/membership_card_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/settings/settings_screen.dart';
 import '../../features/workouts/screens/exercise_picker_screen.dart';
 import '../../features/workouts/screens/records_screen.dart';
 import '../../features/workouts/screens/session_screen.dart';
@@ -80,6 +81,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       // Outside the shell so it covers the bottom bar while editing.
       GoRoute(path: Routes.builder, builder: (_, _) => const BuilderScreen()),
+      GoRoute(path: Routes.settings, builder: (_, _) => const SettingsScreen()),
       GoRoute(
         path: Routes.nutrition,
         builder: (_, _) => const NutritionScreen(),

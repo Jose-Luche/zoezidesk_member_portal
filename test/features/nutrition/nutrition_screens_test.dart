@@ -8,17 +8,8 @@ import 'package:zoezidesk_member/app.dart';
 import 'package:zoezidesk_member/core/router/app_router.dart';
 import 'package:zoezidesk_member/core/router/routes.dart';
 
+import '../../helpers/pump.dart';
 import '../../helpers/test_app.dart';
-
-/// Database and outbox work runs on real async I/O; let it finish
-/// between frames (see the workout screen tests).
-Future<void> settle(WidgetTester tester) async {
-  for (var i = 0; i < 10; i++) {
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
-    await tester.pump(const Duration(milliseconds: 20));
-  }
-  await tester.pumpAndSettle();
-}
 
 DioException offline() => DioException(requestOptions: RequestOptions(), type: DioExceptionType.connectionError);
 

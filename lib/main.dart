@@ -4,8 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app.dart';
 import 'core/config/env.dart';
+import 'core/storage/device_preferences.dart';
+import 'core/storage/session_storage.dart';
+import 'core/theme/theme_mode_controller.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Fonts ship in assets/google_fonts so the app renders correctly offline.
   GoogleFonts.config.allowRuntimeFetching = false;
@@ -17,5 +20,18 @@ void main() {
     );
   }
 
-  runApp(const ProviderScope(child: ZoeziApp()));
+  // Before the first frame, so a light-theme choice never flashes dark.
+  ThemeMode? themeMode;
+  try {
+    themeMode = await const DevicePreferences(FlutterSecureStore()).readThemeMode();
+  } catch (_) {
+    // Unreadable storage: use the default.
+  }
+
+  runApp(ProviderScope(
+    overrides: [
+      if (themeMode != null) initialThemeModeProvider.overrideWithValue(themeMode),
+    ],
+    child: const ZoeziApp(),
+  ));
 }

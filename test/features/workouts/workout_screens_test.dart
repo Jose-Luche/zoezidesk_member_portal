@@ -14,41 +14,8 @@ import 'package:zoezidesk_member/data/db/app_database.dart';
 import 'package:zoezidesk_member/data/repositories/workouts_repository.dart';
 import 'package:zoezidesk_member/data/sync/sync.dart';
 
+import '../../helpers/pump.dart';
 import '../../helpers/test_app.dart';
-
-/// Database and outbox work runs on real async I/O; let it finish
-/// between frames.
-Future<void> settle(WidgetTester tester) async {
-  for (var i = 0; i < 10; i++) {
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
-    await tester.pump(const Duration(milliseconds: 20));
-  }
-  await tester.pumpAndSettle();
-}
-
-/// Runs database work started in the test zone, giving it real time in
-/// small slices between frames (running it inside runAsync can deadlock
-/// with queries the screen started).
-Future<T> io<T>(WidgetTester tester, Future<T> Function() run) async {
-  var done = false;
-  late T result;
-  Object? error;
-  run().then((v) {
-    result = v;
-    done = true;
-  }, onError: (Object e) {
-    error = e;
-    done = true;
-  });
-  for (var i = 0; i < 400 && !done; i++) {
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 5)));
-    // Fake time too: dio and the outbox use timers in the test zone.
-    await tester.pump(const Duration(milliseconds: 20));
-  }
-  if (!done) throw StateError('Database work did not finish');
-  if (error != null) throw error!;
-  return result;
-}
 
 void main() {
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);

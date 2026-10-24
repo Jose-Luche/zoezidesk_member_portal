@@ -130,6 +130,16 @@ class OutboxService {
     return query.map((row) => row.read(count) ?? 0).watchSingle();
   }
 
+  /// Writes that have not reached the server: waiting, being sent, or
+  /// refused and not yet dismissed. Logging out deletes them.
+  Future<int> unsentCount() async {
+    final count = _db.outbox.id.count();
+    final query = _db.selectOnly(_db.outbox)
+      ..addColumns([count])
+      ..where(_db.outbox.status.isIn([OutboxStatus.pending, OutboxStatus.sending, OutboxStatus.failed]));
+    return (await query.getSingle()).read(count) ?? 0;
+  }
+
   /// After a crash or kill, entries left "sending" may or may not have
   /// reached the server; the idempotency key makes resending them safe.
   Future<void> recover() => (_db.update(_db.outbox)

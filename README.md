@@ -90,6 +90,17 @@ Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
 - Android auto-backup is off so the database never leaves the device
   without its key.
 
+## Settings
+
+- Appearance: dark (default), light, or match the phone. Saved in secure
+  storage as a device preference (`DevicePreferences`), read before the
+  first frame, and kept on logout; everything about the member is wiped.
+- Shows how many changes are waiting to send, with "Send now".
+- Logging out warns when changes have not reached the server, since logout
+  deletes them.
+- Notifications: not available yet (needs a Firebase project and a backend
+  sender); the screen says so instead of showing a toggle that does nothing.
+
 ## Design system
 
 - All colors, spacing, radius, motion and font names live in

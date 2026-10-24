@@ -39,9 +39,37 @@ flutter build appbundle --release --dart-define-from-file=env/prod.json
 flutter build apk --release --split-per-abi --dart-define-from-file=env/prod.json
 ```
 
-Release signing still uses the debug key. Before the first Play Store upload,
-create an upload keystore and reference it from `android/key.properties`
-(gitignored).
+### Signing
+
+Release builds are signed with the key in `android/key.properties`
+(gitignored, as are `*.jks` files). Without that file they fall back to the
+debug key and Gradle warns; Google Play rejects those builds.
+
+Create the upload key once and keep the file and passwords somewhere safe
+(a password manager plus an offline backup). Losing it means asking Google
+to reset the upload key.
+
+```sh
+keytool -genkeypair -v -keystore ~/zoezidesk-upload.jks -storetype PKCS12   -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+`android/key.properties`:
+
+```properties
+storeFile=C:/Users/you/zoezidesk-upload.jks
+storePassword=...
+keyAlias=upload
+keyPassword=...
+```
+
+Use Play App Signing: Google keeps the app signing key, and this file only
+signs uploads.
+
+### Size (1.0.0, arm64)
+
+About 22.6 MB as an APK; about 11 MB to download, since Play compresses it
+and serves only the phone's CPU type. Most of it is the Flutter engine
+(about 12 MB) and the app's compiled code (about 9 MB).
 
 ## Authentication
 
@@ -119,8 +147,9 @@ Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
   (`Theme.of(context)`, `context.palette`), never as literals.
 - Light and dark `ThemeData` are built in `lib/core/theme/app_theme.dart`.
   Dark is the default.
-- Barlow and Barlow Condensed are bundled in `assets/google_fonts/` (OFL) and
-  runtime font fetching is disabled, so text renders correctly offline.
+- Barlow and Barlow Condensed are bundled in `assets/fonts/` (OFL) and
+  declared in `pubspec.yaml`, so text renders correctly offline. (The
+  `google_fonts` package was dropped: its catalogue added about 8 MB.)
 - `test/core/theme/contrast_test.dart` checks every text/background pair for
   4.5:1 contrast. Add a pair there whenever a new combination is used.
 - Debug builds have a design gallery at `/dev/design`, linked from the home

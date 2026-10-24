@@ -19,6 +19,7 @@ import 'package:zoezidesk_member/data/api/builder_api.dart';
 import 'package:zoezidesk_member/data/api/checkout_api.dart';
 import 'package:zoezidesk_member/data/api/classes_api.dart';
 import 'package:zoezidesk_member/data/api/dashboard_api.dart';
+import 'package:zoezidesk_member/data/api/devices_api.dart';
 import 'package:zoezidesk_member/data/api/nutrition_api.dart';
 import 'package:zoezidesk_member/data/api/payments_api.dart';
 import 'package:zoezidesk_member/data/api/profile_api.dart';
@@ -47,6 +48,8 @@ class MockCheckoutApi extends Mock implements CheckoutApi {}
 class MockWorkoutsApi extends Mock implements WorkoutsApi {}
 
 class MockNutritionApi extends Mock implements NutritionApi {}
+
+class MockDevicesApi extends Mock implements DevicesApi {}
 
 class FakeBrightness implements BrightnessControl {
   final calls = <String>[];
@@ -86,6 +89,7 @@ class TestEnv {
   final checkoutApi = MockCheckoutApi();
   final workoutsApi = MockWorkoutsApi();
   final nutritionApi = MockNutritionApi();
+  final devicesApi = MockDevicesApi();
 
   /// Links the app asked the phone to open; [openUrlResult] is the answer.
   final openedUrls = <Uri>[];
@@ -110,6 +114,7 @@ class TestEnv {
         checkoutApiProvider.overrideWithValue(checkoutApi),
         workoutsApiProvider.overrideWithValue(workoutsApi),
         nutritionApiProvider.overrideWithValue(nutritionApi),
+        devicesApiProvider.overrideWithValue(devicesApi),
         checkoutPollingProvider.overrideWithValue(
           (every: const Duration(seconds: 1), upTo: const Duration(seconds: 5)),
         ),

@@ -7,6 +7,7 @@ import '../../data/sync/sync.dart';
 import '../../shared/widgets/app_badge.dart';
 import '../../shared/widgets/info_banner.dart';
 import '../more/more_screen.dart' show confirmLogout;
+import '../notifications/notifications_controller.dart';
 
 /// Changes saved on this phone that have not reached the server yet.
 final unsentChangesProvider = StreamProvider.autoDispose<int>(
@@ -65,18 +66,9 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpace.lg),
-          Row(
-            children: [
-              Expanded(child: Text('Notifications', style: text.titleMedium)),
-              const AppBadge(label: 'Coming later', tone: BadgeTone.neutral),
-            ],
-          ),
+          Text('Notifications', style: text.titleMedium),
           const SizedBox(height: AppSpace.sm),
-          const InfoBanner(
-            icon: Icons.notifications_none_rounded,
-            message: 'App notifications are not available yet. Your gym still sends booking and '
-                'payment messages by WhatsApp.',
-          ),
+          const _NotificationsSection(),
           const SizedBox(height: AppSpace.lg),
           Text('Account', style: text.titleMedium),
           const SizedBox(height: AppSpace.sm),
@@ -90,6 +82,45 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _NotificationsSection extends ConsumerWidget {
+  const _NotificationsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(notificationsControllerProvider);
+    if (status == NotificationStatus.unavailable) {
+      return const InfoBanner(
+        icon: Icons.notifications_off_rounded,
+        message: 'Notifications are not available on this phone. Your gym still sends booking '
+            'and payment messages by WhatsApp.',
+      );
+    }
+    final on = status != NotificationStatus.off;
+    return Column(
+      children: [
+        Card(
+          child: SwitchListTile(
+            secondary: const Icon(Icons.notifications_rounded),
+            title: const Text('App notifications'),
+            subtitle: const Text('Class bookings, payments and membership reminders'),
+            value: on,
+            onChanged: (v) => ref.read(notificationsControllerProvider.notifier).setEnabled(v),
+          ),
+        ),
+        if (status == NotificationStatus.blocked) ...[
+          const SizedBox(height: AppSpace.sm),
+          const InfoBanner(
+            tone: BadgeTone.warning,
+            icon: Icons.notifications_paused_rounded,
+            message: 'Your phone is blocking notifications from ZoeziDesk. Allow them in the '
+                "phone's Settings, under Apps > ZoeziDesk > Notifications.",
+          ),
+        ],
+      ],
     );
   }
 }

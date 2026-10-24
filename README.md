@@ -28,6 +28,15 @@ Keys:
   From the Android emulator a local XAMPP backend is reachable at
   `http://10.0.2.2/projects/zoezi_erp/public/api`. Plain HTTP is allowed in
   debug builds only.
+- `FIREBASE_API_KEY`, `FIREBASE_APP_ID`, `FIREBASE_SENDER_ID`,
+  `FIREBASE_PROJECT_ID`: the Android app in Firebase project
+  `zoezidesk-member`, for notifications. Copy them from its
+  `google-services.json` (`firebase apps:sdkconfig ANDROID --project
+  zoezidesk-member`): `client[0].api_key[0].current_key`,
+  `client[0].client_info.mobilesdk_app_id`, `project_info.project_number`,
+  `project_info.project_id`. Without them the app runs without
+  notifications. The Google services Gradle plugin is not used, so
+  `google-services.json` is not needed in the project.
 
 Against a local backend with `APP_ENV=local`, the OTP screen shows the login
 code in debug builds, so no WhatsApp message is needed.
@@ -152,8 +161,27 @@ Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
 - Shows how many changes are waiting to send, with "Send now".
 - Logging out warns when changes have not reached the server, since logout
   deletes them.
-- Notifications: not available yet (needs a Firebase project and a backend
-  sender); the screen says so instead of showing a toggle that does nothing.
+- Notifications: an on/off switch (on by default, kept on logout). Shows
+  when the phone blocks them, and says so when the build has no Firebase.
+
+## Notifications
+
+- Firebase Cloud Messaging (`firebase_core`, `firebase_messaging`). After
+  login the app asks once for permission (Android 13+), then registers its
+  token with `PUT /member/devices`; new tokens are registered as Firebase
+  issues them. Offline, it tries again at the next start.
+- The server sends the same notifications as the web portal: class
+  bookings, payment confirmations and membership expiry reminders. Android
+  shows them on the "Gym updates" channel (created in `MainActivity`) with
+  the logo mark as the status-bar icon.
+- Tapping one opens the screen it is about (classes, payments, otherwise
+  home), also when it starts the app. One that arrives while the app is open
+  shows a banner with "View".
+- Turning them off in Settings removes the phone on the server and deletes
+  the token. Logging out removes the phone on the server.
+- Tokens use the FCM registration-token API, which firebase_messaging 17
+  marks deprecated in favour of installation IDs; moving needs a matching
+  server change.
 
 ## Logo and app icon
 

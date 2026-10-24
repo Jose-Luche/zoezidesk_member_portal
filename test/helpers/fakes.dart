@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:zoezidesk_member/core/notifications/push_messaging.dart';
 import 'package:zoezidesk_member/core/storage/session_storage.dart';
 import 'package:zoezidesk_member/data/api/auth_api.dart';
 import 'package:zoezidesk_member/data/dto/member_summary.dart';
@@ -64,4 +66,46 @@ class FakeAdapter implements HttpClientAdapter {
 
   @override
   void close({bool force = false}) {}
+}
+
+/// Firebase Cloud Messaging stand-in: tests push messages and tokens in.
+class FakePushMessaging implements PushMessaging {
+  bool allow = true;
+  String? token = 'fcm-1';
+  final calls = <String>[];
+  final refreshes = StreamController<String>.broadcast();
+  final foreground = StreamController<PushMessage>.broadcast();
+  final opened = StreamController<PushMessage>.broadcast();
+  PushMessage? launchedFrom;
+
+  @override
+  bool get available => true;
+
+  @override
+  Future<bool> requestPermission() async {
+    calls.add('permission');
+    return allow;
+  }
+
+  @override
+  Future<String?> getToken() async => token;
+
+  @override
+  Stream<String> get tokenRefresh => refreshes.stream;
+
+  @override
+  Future<void> deleteToken() async => calls.add('deleteToken');
+
+  @override
+  Stream<PushMessage> get foregroundMessages => foreground.stream;
+
+  @override
+  Stream<PushMessage> get openedMessages => opened.stream;
+
+  @override
+  Future<PushMessage?> initialMessage() async {
+    final m = launchedFrom;
+    launchedFrom = null;
+    return m;
+  }
 }

@@ -4,4 +4,17 @@ abstract final class Env {
   static const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
   static bool get isConfigured => apiBaseUrl.isNotEmpty;
+
+  // Firebase project of the Android app, for notifications. Without them
+  // the app runs without notifications.
+  static const firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY');
+  static const firebaseAppId = String.fromEnvironment('FIREBASE_APP_ID');
+  static const firebaseSenderId = String.fromEnvironment('FIREBASE_SENDER_ID');
+  static const firebaseProjectId = String.fromEnvironment('FIREBASE_PROJECT_ID');
+
+  static bool get hasFirebase =>
+      firebaseApiKey.isNotEmpty &&
+      firebaseAppId.isNotEmpty &&
+      firebaseSenderId.isNotEmpty &&
+      firebaseProjectId.isNotEmpty;
 }

@@ -4,4 +4,6 @@
     <color name="launch_background">#FF1F2937</color>
     <!-- Brand navy (the light logo's text colour). -->
     <color name="ic_launcher_background">#FF0D1E2E</color>
+    <!-- Accent behind the notification icon (AppColors.primary). -->
+    <color name="notification_accent">#FFF97316</color>
 </resources>

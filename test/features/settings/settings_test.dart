@@ -143,6 +143,7 @@ void main() {
     await tester.tap(find.text('Settings'));
     await settle(tester);
     expect(find.text('Appearance'), findsOneWidget);
-    expect(find.text('Coming later'), findsOneWidget);
+    // Test builds have no Firebase project.
+    expect(find.textContaining('Notifications are not available on this phone'), findsOneWidget);
   });
 }

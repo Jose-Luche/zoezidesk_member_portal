@@ -56,3 +56,6 @@ app.*.map.json
 
 # Local Claude Code tooling
 /.claude/
+
+# Firebase config: values live in env/*.json (see README)
+android/app/google-services.json

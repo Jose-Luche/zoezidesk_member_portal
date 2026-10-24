@@ -16,15 +16,20 @@ only works once this branch is live there.
 1. Back up the production database.
 2. Merge `mobile-api` into `main` and deploy as usual (`composer install
    --no-dev`, `php artisan optimize`).
-3. `php artisan migrate --force`. Six migrations:
+3. `php artisan migrate --force`. Seven migrations:
    `2026_10_23_000001` (idempotency keys), `2026_10_24_000001` and
    `_000002` (nullable `client_uuid` columns), `_000003` (fixes foods'
    default serving size from their descriptions), `_000004` (app login
-   sessions), `_000005` (gives existing app tokens a 30-day expiry).
+   sessions), `_000005` (gives existing app tokens a 30-day expiry),
+   `_000006` (phones for app notifications).
 4. `.env`: optionally `MEMBER_ACCESS_TOKEN_MINUTES` / `MEMBER_REFRESH_TOKEN_DAYS`
    (default 60 / 60); `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_WORKOUT_MODEL`) for
    the workout builder; `MPESA_ENV=live` with the live M-Pesa credentials
-   (`MPESA_BASE_URL` only to override the Daraja host).
+   (`MPESA_BASE_URL` only to override the Daraja host);
+   `FIREBASE_CREDENTIALS`: path to the Firebase service account key for
+   project `zoezidesk-member` (Project settings > Service accounts > Generate
+   new private key), stored outside the web root and readable by PHP.
+   Without it, app notifications are skipped and web push carries on.
 5. Make sure the scheduler cron runs every minute
    (`* * * * * php /path/to/artisan schedule:run`). The new
    `payments:reconcile-stk` (every 5 minutes) completes M-Pesa payments
@@ -491,6 +496,28 @@ Tests: `tests/Feature/Api/Member/WorkoutStatsTest.php`, `NotesTest.php`.
   `2026_10_24_000005` gives them 30 days.
 - Daily: `sanctum:prune-expired --hours=24`, and `model:prune` removes
   sessions that ended or expired over 30 days ago.
+
+## ✅ App notifications (commit `4382b75`)
+
+`FcmService`, `Api\Member\DevicesController`, table `member_devices`
+(migration `2026_10_24_000006`), tests in
+`tests/Feature/Api/Member/AppNotificationsTest.php`.
+
+- `PUT /member/devices` `{token, platform}`: register this phone's Firebase
+  token (again is fine; a token moves to whoever logs in on that phone).
+  `DELETE /member/devices` `{token}`: stop notifications to it. Logging out
+  (either logout route) removes the phones of that session.
+- `SendPushNotification` (used by class booking on the web and in the app,
+  payment confirmation and expiry reminders) now sends to the member's
+  phones through FCM HTTP v1 as well as to browsers. Payload:
+  `notification {title, body}`, `data {url}` (the web portal path),
+  Android channel `general`, high priority. Each channel's failure is only
+  logged, and the job does not retry, so a delivered notification is never
+  sent twice.
+- No new package: the OAuth token is a JWT signed with `openssl_sign` and
+  cached for 50 minutes. Phones FCM reports as unregistered are deleted.
+- Tokens are stored with a SHA-256 hash for lookups; the token itself is
+  hidden from JSON.
 
 ## Open questions ❓
 

@@ -261,10 +261,29 @@ credentials in M-Pesa settings, and `MPESA_ENV=live`. `MPESA_BASE_URL`
 (new, optional) points `MpesaService` at a fake Daraja for local testing;
 leave it unset in production.
 
-Not handled (as on the web): a pending payment whose callback never arrives
-stays pending. An STK status query (`/mpesa/stkpushquery/v1/query`) on a
-schedule would settle these; it needs a change to `MpesaService`, so it is
-left for you to decide.
+### Payments whose callback never arrives (commit `47cfad3`)
+
+- `MpesaPaymentSettler` is the one place a pending membership payment is
+  completed or failed. It locks the payment row and acts only while it is
+  pending. Before, two deliveries of the same callback at once could both
+  pass the "still pending" check; the second activation restarted an early
+  renewal from today and sent the confirmation twice. The web callback
+  (`MpesaCallbackController`) uses it; its responses are unchanged.
+- `MpesaService::stkQuery()` asks Daraja (STK Push Query) how a push ended.
+- `payments:reconcile-stk` runs every 5 minutes (in `bootstrap/app.php`;
+  needs the scheduler's cron, as the existing reminders do). It checks
+  pending payments a minute to 24 hours old, backing off from every 5
+  minutes to hourly per payment, completes or fails them, and reports
+  older ones for staff to check against the M-Pesa statement.
+- The app's status check (`GET /payments/{id}/status`) asks Safaricom at
+  once when a payment has been pending for over a minute (at most every
+  15 seconds), so "Check again" resolves without waiting for the schedule.
+- Payments completed by the query have no M-Pesa receipt number (the
+  query does not return one); the confirmation message leaves it out.
+
+Not changed (ask first): the gym subscription payments
+(`GymDeskCallbackController`, `GymDeskMpesaService`) have the same
+unlocked check-then-update and no query fallback.
 
 ## B8. Workout logging ✅ (Feature 10, commits `ba3984b`, `50adec3`)
 

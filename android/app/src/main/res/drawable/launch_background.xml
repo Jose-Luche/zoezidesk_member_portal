@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Plain brand background while Flutter starts; no white flash. -->
+<!-- The ZoeziDesk mark on the app background while Flutter starts
+     (Android 11 and older; Android 12+ shows the launcher icon). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/launch_background" />
+    <item>
+        <bitmap android:gravity="center" android:src="@drawable/launch_mark" />
+    </item>
 </layer-list>

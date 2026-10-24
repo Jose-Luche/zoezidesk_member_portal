@@ -101,6 +101,17 @@ Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
 - Notifications: not available yet (needs a Firebase project and a backend
   sender); the screen says so instead of showing a toggle that does nothing.
 
+## Logo and app icon
+
+- The wordmarks are in `assets/logo/`; the app bundles the dark and light
+  ones and shows the right one for the theme (`BrandMark`, via
+  `flutter_svg`).
+- Launcher icons, the launch-screen mark and the 512 px store icon
+  (`store/icon-512.png`) are drawn from the logo mark by
+  `python tool/make_icons.py` (no image library needed). Android uses an
+  adaptive icon on brand navy `#0D1E2E` with a monochrome layer for themed
+  icons. Run the script again if the mark changes.
+
 ## Design system
 
 - All colors, spacing, radius, motion and font names live in

@@ -57,6 +57,7 @@ dependencies:
   uuid: ^4.6.0
   screen_brightness: ^2.1.11
   url_launcher: ^6.3.3
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -72,3 +73,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/google_fonts/
+    # The wordmark for each theme (the other variants stay in the repo).
+    - assets/logo/zoezi-desk-horizontal-dark.svg
+    - assets/logo/zoezi-desk-horizontal-light.svg

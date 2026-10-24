@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme/app_tokens.dart';
 
@@ -51,35 +52,23 @@ class AuthScaffold extends StatelessWidget {
   }
 }
 
+/// The ZoeziDesk wordmark, light text on dark and navy text on light.
 class BrandMark extends StatelessWidget {
   const BrandMark({super.key});
 
+  static const darkAsset = 'assets/logo/zoezi-desk-horizontal-dark.svg';
+  static const lightAsset = 'assets/logo/zoezi-desk-horizontal-light.svg';
+
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Row(
-      children: [
-        Container(
-          width: AppSpace.xxl,
-          height: AppSpace.xxl,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-          ),
-          child: Icon(
-            Icons.fitness_center_rounded,
-            color: Theme.of(context).colorScheme.onPrimary,
-          ),
-        ),
-        const SizedBox(width: AppSpace.md),
-        Text(
-          'ZoeziDesk',
-          style: Theme.of(context)
-              .textTheme
-              .headlineMedium
-              ?.copyWith(color: palette.text),
-        ),
-      ],
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: SvgPicture.asset(
+        dark ? darkAsset : lightAsset,
+        height: AppSpace.xl,
+        semanticsLabel: 'ZoeziDesk',
+      ),
     );
   }
 }

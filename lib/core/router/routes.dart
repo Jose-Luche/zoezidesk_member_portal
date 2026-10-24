@@ -8,6 +8,8 @@ abstract final class Routes {
   static const workouts = '/workouts';
   static const workoutHistory = '/workouts/history';
   static const workoutRecords = '/workouts/records';
+  static const workoutProgress = '/workouts/progress';
+  static String muscleProgress(String muscle) => '/workouts/progress/$muscle';
 
   /// The exercise library. With a session id as `extra`, picking an
   /// exercise adds it to that session.

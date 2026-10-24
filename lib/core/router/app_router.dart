@@ -24,6 +24,8 @@ import '../../features/profile/screens/membership_card_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/workouts/screens/exercise_picker_screen.dart';
+import '../../features/workouts/screens/muscle_progress_screen.dart';
+import '../../features/workouts/screens/progress_screen.dart';
 import '../../features/workouts/screens/records_screen.dart';
 import '../../features/workouts/screens/session_screen.dart';
 import '../../features/workouts/screens/workout_history_screen.dart';
@@ -99,6 +101,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: Routes.workoutHistory, builder: (_, _) => const WorkoutHistoryScreen()),
       GoRoute(path: Routes.workoutRecords, builder: (_, _) => const RecordsScreen()),
+      GoRoute(
+        path: Routes.workoutProgress,
+        builder: (_, _) => const ProgressScreen(),
+        routes: [
+          GoRoute(
+            path: ':muscle',
+            builder: (_, state) => MuscleProgressScreen(muscle: state.pathParameters['muscle']!),
+          ),
+        ],
+      ),
       GoRoute(
         path: Routes.exercises,
         builder: (_, state) => ExercisePickerScreen(sessionClientId: state.extra as String?),

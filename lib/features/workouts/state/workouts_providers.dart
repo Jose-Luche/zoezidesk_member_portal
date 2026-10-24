@@ -129,3 +129,19 @@ final sessionDetailRefreshProvider =
     NotifierProvider.autoDispose.family<RefreshController, AsyncValue<void>, String>(
   (clientId) => RefreshController((r) => r.loadDetail(clientId)),
 );
+
+final progressProvider = StreamProvider.autoDispose<Cached<ProgressSummary>?>(
+  (ref) => ref.watch(workoutsRepositoryProvider).watchProgress(),
+);
+
+final progressRefreshProvider = NotifierProvider.autoDispose<RefreshController, AsyncValue<void>>(
+  () => RefreshController((r) => r.refreshProgress()),
+);
+
+final muscleProgressProvider = StreamProvider.autoDispose.family<Cached<MuscleDetail>?, String>(
+  (ref, muscle) => ref.watch(workoutsRepositoryProvider).watchMuscle(muscle),
+);
+
+final muscleRefreshProvider = NotifierProvider.autoDispose.family<RefreshController, AsyncValue<void>, String>(
+  (muscle) => RefreshController((r) => r.refreshMuscle(muscle)),
+);

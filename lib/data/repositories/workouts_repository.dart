@@ -9,6 +9,9 @@ import '../../core/sync/outbox_service.dart';
 import '../api/workouts_api.dart';
 import '../db/app_database.dart';
 import '../db/encrypted_cache.dart';
+import 'workout_progress.dart';
+
+export 'workout_progress.dart';
 
 abstract final class WorkoutOutboxKind {
   static const sync = 'workout_sync';
@@ -188,6 +191,8 @@ class WorkoutsRepository {
   static const librarySyncKey = 'exercise_library';
   static const historySyncKey = 'workout_history';
   static const recordsKey = 'workout_prs';
+  static const progressKey = 'workout_progress';
+  static String muscleKey(String muscle) => 'muscle_progress:$muscle';
 
   final AppDatabase _db;
   final EncryptedCache _cache;
@@ -649,6 +654,26 @@ class WorkoutsRepository {
   Future<void> refreshRecords() async {
     final json = await guardRequest(_api.prs);
     await _cache.put(recordsKey, json, _clock());
+  }
+
+  // ── Progress (worked out on the server, cached for offline) ────────
+
+  Stream<Cached<ProgressSummary>?> watchProgress() =>
+      _cache.watch(progressKey).map((c) => c?.map(ProgressSummary.fromJson));
+
+  /// Throws [AppFailure].
+  Future<void> refreshProgress() async {
+    final json = await guardRequest(_api.progress);
+    await _cache.put(progressKey, json, _clock());
+  }
+
+  Stream<Cached<MuscleDetail>?> watchMuscle(String muscle) =>
+      _cache.watch(muscleKey(muscle)).map((c) => c?.map(MuscleDetail.fromJson));
+
+  /// Throws [AppFailure].
+  Future<void> refreshMuscle(String muscle) async {
+    final json = await guardRequest(() => _api.muscleProgress(muscle));
+    await _cache.put(muscleKey(muscle), json, _clock());
   }
 
   // ── Outbox results ─────────────────────────────────────────────────

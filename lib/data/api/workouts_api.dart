@@ -23,6 +23,12 @@ class WorkoutsApi {
   Future<Map<String, dynamic>> show(int serverId) async =>
       (await _dio.get<Map<String, dynamic>>('/member/workouts/$serverId')).data!;
 
+  Future<Map<String, dynamic>> progress() async =>
+      (await _dio.get<Map<String, dynamic>>('/member/workouts/progress')).data!;
+
+  Future<Map<String, dynamic>> muscleProgress(String muscle) async =>
+      (await _dio.get<Map<String, dynamic>>('/member/workouts/progress/$muscle')).data!;
+
   Future<Map<String, dynamic>> prs() async =>
       (await _dio.get<Map<String, dynamic>>('/member/workouts/prs')).data!;
 }

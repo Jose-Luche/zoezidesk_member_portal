@@ -337,7 +337,32 @@ Rules that differ from the web (decided for Feature 10):
 - If the same in-progress session were edited on the web and in the app at
   once, the app's latest document wins for that session.
 
-Not in the app yet: history filters, workout analytics and muscle progress.
+Not in the app yet: history filters.
+
+### Progress (commits `816ecfd`, `3c1f05d`)
+
+- `WorkoutProgressService` works out the web Analytics page's numbers in
+  the database: all-time and this-month workouts, sets, volume (weight x
+  reps) and PRs; the streak; averages per workout; top 5 exercises by
+  volume. The web `WorkoutAnalytics` page now uses it, so the web and the
+  app show the same numbers.
+- The streak was broken on the web (at most 1): on Carbon 3
+  `diffInDays()` is a signed float, so it never equalled 1. It now counts
+  consecutive days with a finished workout, ending today or yesterday,
+  once per day. (The old `/workout-stats/streak` API has the same bug; the
+  app does not use it and it was left as it was.)
+- `GET /api/member/workouts/progress`: that summary plus
+  `MuscleAnalyticsService::overview()` (status, sets this week against the
+  goal's target, 8 weekly set counts and strength change per muscle).
+- `GET /api/member/workouts/progress/{muscle}`: `muscleDetail()` for 12
+  weeks (weekly volume; per exercise the best set, est. 1RM, change and
+  best per week; recent records). Records and exercises are sent as lists
+  (`recentPrs()` keeps collection keys).
+
+The app's Progress screen (Workouts tab) shows these, saved for offline
+reading. Charts are single-series weekly bars drawn on a canvas in the
+accent colour (contrast checked on both surfaces), with the values also
+available as text.
 
 ## B9. Food diary ✅ (Feature 11, commit `f3cbdf3`)
 

@@ -104,6 +104,13 @@ class _WorkoutsHubScreenState extends ConsumerState<WorkoutsHubScreen> {
               child: Column(
                 children: [
                   ListTile(
+                    leading: const Icon(Icons.insights_rounded),
+                    title: const Text('Progress'),
+                    subtitle: const Text('Streak, totals and muscle balance'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(Routes.workoutProgress),
+                  ),
+                  ListTile(
                     leading: const Icon(Icons.history_rounded),
                     title: const Text('Workout history'),
                     trailing: const Icon(Icons.chevron_right_rounded),

@@ -6,6 +6,7 @@ import '../config/env.dart';
 import '../storage/session_storage.dart';
 import 'auth_interceptor.dart';
 import 'retry_interceptor.dart';
+import 'token_refresher.dart';
 
 Dio buildDio({
   required String baseUrl,
@@ -22,6 +23,7 @@ Dio buildDio({
       responseType: ResponseType.json,
     ),
   );
+  auth.attach(dio);
   dio.interceptors.addAll([auth, RetryInterceptor(dio)]);
   return dio;
 }
@@ -32,6 +34,7 @@ final dioProvider = Provider<Dio>((ref) {
     baseUrl: Env.apiBaseUrl,
     auth: AuthInterceptor(
       readToken: storage.readToken,
+      refresh: TokenRefresher(storage).call,
       // Read lazily: the session controller itself depends on this client.
       onUnauthorized: () =>
           ref.read(sessionControllerProvider.notifier).expire(),

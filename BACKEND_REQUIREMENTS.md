@@ -16,11 +16,13 @@ only works once this branch is live there.
 1. Back up the production database.
 2. Merge `mobile-api` into `main` and deploy as usual (`composer install
    --no-dev`, `php artisan optimize`).
-3. `php artisan migrate --force`. Four additive migrations:
+3. `php artisan migrate --force`. Six migrations:
    `2026_10_23_000001` (idempotency keys), `2026_10_24_000001` and
    `_000002` (nullable `client_uuid` columns), `_000003` (fixes foods'
-   default serving size from their descriptions).
-4. `.env`: `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_WORKOUT_MODEL`) for
+   default serving size from their descriptions), `_000004` (app login
+   sessions), `_000005` (gives existing app tokens a 30-day expiry).
+4. `.env`: optionally `MEMBER_ACCESS_TOKEN_MINUTES` / `MEMBER_REFRESH_TOKEN_DAYS`
+   (default 60 / 60); `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_WORKOUT_MODEL`) for
    the workout builder; `MPESA_ENV=live` with the live M-Pesa credentials
    (`MPESA_BASE_URL` only to override the Daraja host).
 5. Make sure the scheduler cron runs every minute
@@ -462,13 +464,39 @@ Tests: `tests/Feature/Api/Member/WorkoutStatsTest.php`, `NotesTest.php`.
   `longest_streak` counts each workout day once. The rest-day recommendation
   ("rest after 7 days in a row") uses the same streak, so it can now trigger.
 
+## ✅ Expiring tokens (commits `88d3b96`, `15944b0`)
+
+`MemberSessionService`, table `member_sessions` (migration
+`2026_10_24_000004`), tests in `tests/Feature/Api/Member/TokenRefreshTest.php`.
+
+- `POST /member/otp/verify` now also returns `refresh_token`, `expires_at`
+  and `refresh_expires_at` (ISO 8601). `token` is unchanged, so older app
+  builds keep working until their token expires.
+- The access token (Sanctum) expires after `MEMBER_ACCESS_TOKEN_MINUTES`
+  (60). The refresh token lasts `MEMBER_REFRESH_TOKEN_DAYS` (60) from its
+  last use.
+- `POST /member/token/refresh` `{refresh_token}` → the same four fields, or
+  401 when the session has ended. No access token needed; 30 per minute per
+  IP. Each refresh returns a new refresh token and deletes the previous
+  access token. The refresh token sent stays valid until the new one has
+  been used, so a refresh whose answer was lost can be repeated. A refresh
+  token that was replaced and comes back anyway ends the session (it was
+  copied). Suspended members cannot refresh.
+- `POST /member/token/revoke` `{refresh_token}`: logout that works after
+  the access token expired. Always 200. `POST /member/logout` also ends the
+  session.
+- Only SHA-256 hashes of refresh tokens are stored. Each login is its own
+  session, so logging out on one phone keeps another signed in.
+- Member tokens issued before this have no expiry; migration
+  `2026_10_24_000005` gives them 30 days.
+- Daily: `sanctum:prune-expired --hours=24`, and `model:prune` removes
+  sessions that ended or expired over 30 days ago.
+
 ## Open questions ❓
 
-- **Refresh tokens:** Sanctum tokens never expire (`sanctum.expiration` is
-  null). The app treats any `401` as logout. Short-lived access tokens with
-  refresh tokens are possible later if you want them.
 - **Offline logout:** if the member logs out without a connection, the app
-  wipes local data but the server token stays valid until it is revoked.
+  wipes local data, but the server session stays valid until its refresh
+  token expires (60 days without use). Nothing on the phone can use it.
 
 ## Web bugs fixed (2026-10-24, on `mobile-api`)
 

@@ -34,7 +34,11 @@ class AuthRepository {
     final result = await guardRequest(
       () => _api.verifyOtp(phone: phone, code: code, deviceName: deviceName),
     );
-    await _storage.save(token: result.token, member: result.member);
+    await _storage.save(
+      token: result.token,
+      refreshToken: result.refreshToken,
+      member: result.member,
+    );
     return result.member;
   }
 
@@ -54,10 +58,11 @@ class AuthRepository {
   }
 
   /// Best-effort server revoke, then always wipe local data. Offline, the
-  /// server token stays valid until revoked from another session.
+  /// server session stays valid until its refresh token expires.
   Future<void> logout() async {
     try {
-      await _api.logout().timeout(const Duration(seconds: 5));
+      final refreshToken = await _storage.readRefreshToken();
+      await _api.logout(refreshToken: refreshToken).timeout(const Duration(seconds: 5));
     } catch (_) {
       // Logging out must work offline.
     }

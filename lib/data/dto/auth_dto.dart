@@ -18,11 +18,13 @@ abstract class OtpRequestResult with _$OtpRequestResult {
       _$OtpRequestResultFromJson(json);
 }
 
-/// `POST /member/otp/verify`.
+/// `POST /member/otp/verify`. [refreshToken] is missing from servers
+/// without token expiry; the access token then never expires.
 @freezed
 abstract class LoginResult with _$LoginResult {
   const factory LoginResult({
     required String token,
+    String? refreshToken,
     required MemberSummary member,
   }) = _LoginResult;
 

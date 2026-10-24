@@ -28,17 +28,20 @@ class FlutterSecureStore implements SecureStore {
   Future<void> deleteAll() => _storage.deleteAll();
 }
 
-/// The access token and signed-in member live only in secure storage,
-/// never in shared preferences or plain files.
+/// The access and refresh tokens and the signed-in member live only in
+/// secure storage, never in shared preferences or plain files.
 class SessionStorage {
   const SessionStorage(this._store);
 
   static const _tokenKey = 'auth_token';
+  static const _refreshTokenKey = 'auth_refresh_token';
   static const _memberKey = 'auth_member';
 
   final SecureStore _store;
 
   Future<String?> readToken() => _store.read(_tokenKey);
+
+  Future<String?> readRefreshToken() => _store.read(_refreshTokenKey);
 
   Future<MemberSummary?> readMember() async {
     final raw = await _store.read(_memberKey);
@@ -46,9 +49,20 @@ class SessionStorage {
     return MemberSummary.fromJson(jsonDecode(raw) as Map<String, dynamic>);
   }
 
-  Future<void> save({required String token, required MemberSummary member}) async {
-    await _store.write(_tokenKey, token);
+  Future<void> save({
+    required String token,
+    String? refreshToken,
+    required MemberSummary member,
+  }) async {
+    await saveTokens(token: token, refreshToken: refreshToken);
     await _store.write(_memberKey, jsonEncode(member.toJson()));
+  }
+
+  /// The refresh token is written first: if writing the access token then
+  /// fails, the next 401 simply refreshes again.
+  Future<void> saveTokens({required String token, String? refreshToken}) async {
+    if (refreshToken != null) await _store.write(_refreshTokenKey, refreshToken);
+    await _store.write(_tokenKey, token);
   }
 
   Future<void> clear() => _store.deleteAll();

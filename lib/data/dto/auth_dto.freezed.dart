@@ -292,7 +292,7 @@ as String?,
 /// @nodoc
 mixin _$LoginResult {
 
- String get token; MemberSummary get member;
+ String get token; String? get refreshToken; MemberSummary get member;
 /// Create a copy of LoginResult
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -306,20 +306,20 @@ $LoginResultCopyWith<LoginResult> get copyWith => _$LoginResultCopyWithImpl<Logi
 @override
 bool operator ==(Object other) {
   final _this = this as LoginResult;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LoginResult&&(identical(other.token, _this.token) || other.token == _this.token)&&(identical(other.member, _this.member) || other.member == _this.member));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LoginResult&&(identical(other.token, _this.token) || other.token == _this.token)&&(identical(other.refreshToken, _this.refreshToken) || other.refreshToken == _this.refreshToken)&&(identical(other.member, _this.member) || other.member == _this.member));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as LoginResult;
-  return Object.hash(runtimeType,_this.token,_this.member);
+  return Object.hash(runtimeType,_this.token,_this.refreshToken,_this.member);
 }
 
 @override
 String toString() {
   final _this = this as LoginResult;
-  return 'LoginResult(token: ${_this.token}, member: ${_this.member})';
+  return 'LoginResult(token: ${_this.token}, refreshToken: ${_this.refreshToken}, member: ${_this.member})';
 }
 
 
@@ -330,7 +330,7 @@ abstract mixin class $LoginResultCopyWith<$Res>  {
   factory $LoginResultCopyWith(LoginResult value, $Res Function(LoginResult) _then) = _$LoginResultCopyWithImpl;
 @useResult
 $Res call({
- String token, MemberSummary member
+ String token, String? refreshToken, MemberSummary member
 });
 
 
@@ -347,10 +347,11 @@ class _$LoginResultCopyWithImpl<$Res>
 
 /// Create a copy of LoginResult
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? token = null,Object? member = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? token = null,Object? refreshToken = freezed,Object? member = null,}) {
   return _then(LoginResult(
 token: null == token ? _self.token : token // ignore: cast_nullable_to_non_nullable
-as String,member: null == member ? _self.member : member // ignore: cast_nullable_to_non_nullable
+as String,refreshToken: freezed == refreshToken ? _self.refreshToken : refreshToken // ignore: cast_nullable_to_non_nullable
+as String?,member: null == member ? _self.member : member // ignore: cast_nullable_to_non_nullable
 as MemberSummary,
   ));
 }
@@ -445,10 +446,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String token,  MemberSummary member)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String token,  String? refreshToken,  MemberSummary member)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LoginResult() when $default != null:
-return $default(_that.token,_that.member);case _:
+return $default(_that.token,_that.refreshToken,_that.member);case _:
   return orElse();
 
 }
@@ -466,10 +467,10 @@ return $default(_that.token,_that.member);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String token,  MemberSummary member)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String token,  String? refreshToken,  MemberSummary member)  $default,) {final _that = this;
 switch (_that) {
 case _LoginResult():
-return $default(_that.token,_that.member);case _:
+return $default(_that.token,_that.refreshToken,_that.member);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -486,10 +487,10 @@ return $default(_that.token,_that.member);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String token,  MemberSummary member)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String token,  String? refreshToken,  MemberSummary member)?  $default,) {final _that = this;
 switch (_that) {
 case _LoginResult() when $default != null:
-return $default(_that.token,_that.member);case _:
+return $default(_that.token,_that.refreshToken,_that.member);case _:
   return null;
 
 }
@@ -501,10 +502,11 @@ return $default(_that.token,_that.member);case _:
 @JsonSerializable()
 
 class _LoginResult implements LoginResult {
-  const _LoginResult({required this.token, required this.member});
+  const _LoginResult({required this.token, this.refreshToken, required this.member});
   factory _LoginResult.fromJson(Map<String, dynamic> json) => _$LoginResultFromJson(json);
 
 @override final  String token;
+@override final  String? refreshToken;
 @override final  MemberSummary member;
 
 /// Create a copy of LoginResult
@@ -520,18 +522,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LoginResult&&(identical(other.token, token) || other.token == token)&&(identical(other.member, member) || other.member == member));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LoginResult&&(identical(other.token, token) || other.token == token)&&(identical(other.refreshToken, refreshToken) || other.refreshToken == refreshToken)&&(identical(other.member, member) || other.member == member));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,token,member);
+    return Object.hash(runtimeType,token,refreshToken,member);
 }
 
 @override
 String toString() {
-    return 'LoginResult(token: $token, member: $member)';
+    return 'LoginResult(token: $token, refreshToken: $refreshToken, member: $member)';
 }
 
 
@@ -542,7 +544,7 @@ abstract mixin class _$LoginResultCopyWith<$Res> implements $LoginResultCopyWith
   factory _$LoginResultCopyWith(_LoginResult value, $Res Function(_LoginResult) _then) = __$LoginResultCopyWithImpl;
 @override @useResult
 $Res call({
- String token, MemberSummary member
+ String token, String? refreshToken, MemberSummary member
 });
 
 
@@ -559,10 +561,11 @@ class __$LoginResultCopyWithImpl<$Res>
 
 /// Create a copy of LoginResult
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? token = null,Object? member = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? token = null,Object? refreshToken = freezed,Object? member = null,}) {
   return _then(_LoginResult(
 token: null == token ? _self.token : token // ignore: cast_nullable_to_non_nullable
-as String,member: null == member ? _self.member : member // ignore: cast_nullable_to_non_nullable
+as String,refreshToken: freezed == refreshToken ? _self.refreshToken : refreshToken // ignore: cast_nullable_to_non_nullable
+as String?,member: null == member ? _self.member : member // ignore: cast_nullable_to_non_nullable
 as MemberSummary,
   ));
 }

@@ -68,7 +68,7 @@ void main() {
     expect(state, isA<SignedOut>());
     expect((state as SignedOut).reason, contains('session has ended'));
     expect(store.values, isEmpty);
-    verifyNever(() => api.logout());
+    verifyNever(() => api.logout(refreshToken: any(named: 'refreshToken')));
   });
 
   test('expire does nothing when already signed out', () async {

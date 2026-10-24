@@ -96,12 +96,16 @@ and serves only the phone's CPU type. Most of it is the Flutter engine
 ## Authentication
 
 - OTP over WhatsApp (`/member/otp/request`, `/member/otp/verify`).
-- The Sanctum token and the signed-in member are kept only in
-  `flutter_secure_storage`.
-- There are no refresh tokens. Any `401` on an authenticated request ends
-  the session, wipes local data and returns to login with a message.
-- Logout revokes the token on the server when online and always wipes local
-  data.
+- The access token (60 minutes), the refresh token (60 days from its last
+  use) and the signed-in member are kept only in `flutter_secure_storage`.
+- A `401` on an authenticated request renews the tokens once
+  (`/member/token/refresh`; requests failing together share one refresh)
+  and repeats the request. Only when the server refuses the refresh token
+  does the session end: local data is wiped and login shows a message.
+  Offline, the session is kept and the request fails as offline.
+- Logout ends the session on the server by refresh token when online
+  (`/member/token/revoke`, which works with an expired access token) and
+  always wipes local data.
 
 Backend changes the app depends on are tracked in `BACKEND_REQUIREMENTS.md`.
 

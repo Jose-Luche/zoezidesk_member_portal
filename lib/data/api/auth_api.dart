@@ -30,10 +30,13 @@ class AuthApi {
     return LoginResult.fromJson(res.data!);
   }
 
-  /// Revokes the current token on the server. A 401 here means the token
-  /// is already gone, so it must not trigger the session-expired flow.
-  Future<void> logout() => _dio.post<void>(
-        '/member/logout',
+  /// Ends the session on the server. With a [refreshToken] this works even
+  /// when the access token has expired; without one (older servers) it
+  /// revokes the access token. A 401 here means the session is already
+  /// gone, so it must not trigger the session-expired flow.
+  Future<void> logout({String? refreshToken}) => _dio.post<void>(
+        refreshToken == null ? '/member/logout' : '/member/token/revoke',
+        data: refreshToken == null ? null : {'refresh_token': refreshToken},
         options: Options(
           extra: {AuthInterceptor.skipUnauthorizedHandler: true},
           receiveTimeout: const Duration(seconds: 5),

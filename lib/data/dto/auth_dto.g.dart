@@ -22,11 +22,13 @@ Map<String, dynamic> _$OtpRequestResultToJson(_OtpRequestResult instance) =>
 
 _LoginResult _$LoginResultFromJson(Map<String, dynamic> json) => _LoginResult(
   token: json['token'] as String,
+  refreshToken: json['refresh_token'] as String?,
   member: MemberSummary.fromJson(json['member'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$LoginResultToJson(_LoginResult instance) =>
     <String, dynamic>{
       'token': instance.token,
+      'refresh_token': instance.refreshToken,
       'member': instance.member.toJson(),
     };

@@ -26,17 +26,19 @@ void main() {
     );
   });
 
-  test('verifyOtp stores token and member in secure storage', () async {
+  test('verifyOtp stores the tokens and member in secure storage', () async {
     when(() => api.verifyOtp(
           phone: any(named: 'phone'),
           code: any(named: 'code'),
           deviceName: any(named: 'deviceName'),
-        )).thenAnswer((_) async => const LoginResult(token: 't1', member: testMember));
+        )).thenAnswer((_) async =>
+            const LoginResult(token: 't1', refreshToken: 'r1', member: testMember));
 
     final member = await repo.verifyOtp(phone: '0711000001', code: '123456');
 
     expect(member, testMember);
     expect(await storage.readToken(), 't1');
+    expect(await storage.readRefreshToken(), 'r1');
     expect(await storage.readMember(), testMember);
   });
 
@@ -88,6 +90,16 @@ void main() {
     await repo.logout();
 
     verify(() => api.logout()).called(1);
+    expect(store.values, isEmpty);
+  });
+
+  test('logout ends the session by refresh token when there is one', () async {
+    await storage.save(token: 't1', refreshToken: 'r1', member: testMember);
+    when(() => api.logout(refreshToken: 'r1')).thenAnswer((_) async {});
+
+    await repo.logout();
+
+    verify(() => api.logout(refreshToken: 'r1')).called(1);
     expect(store.values, isEmpty);
   });
 

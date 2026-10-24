@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../data/dto/builder_dto.dart';
+import '../../../data/sync/sync.dart';
 import '../../../shared/widgets/app_badge.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/skeleton.dart';
@@ -29,13 +32,19 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
     super.dispose();
   }
 
-  /// Start is at the bottom; the "started" banner is at the top.
+  /// Starting creates the session on the server; logging then happens in
+  /// the app's workout screen.
   Future<void> _start(GuidedWorkout workout) async {
-    final started = await ref.read(workoutEditorProvider.notifier).start(workout);
-    if (!started || !mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout started.')));
-    if (_scroll.hasClients) {
-      await _scroll.animateTo(0, duration: AppMotion.medium, curve: AppMotion.curve);
+    final sessionId = await ref.read(workoutEditorProvider.notifier).start(workout);
+    if (sessionId != null && mounted) await _open(sessionId);
+  }
+
+  Future<void> _open(int sessionId) async {
+    try {
+      final clientId = await ref.read(workoutsRepositoryProvider).adoptServerSession(sessionId);
+      if (mounted) await context.push(Routes.workoutSession(clientId));
+    } on AppFailure catch (e) {
+      if (mounted) _report(context, e);
     }
   }
 
@@ -87,11 +96,12 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
               _Summary(workout: workout),
               if (locked) ...[
                 const SizedBox(height: AppSpace.md),
-                const InfoBanner(
+                InfoBanner(
                   tone: BadgeTone.success,
                   icon: Icons.play_circle_rounded,
-                  message: 'Workout started. Log your sets on the web portal for now; '
-                      'logging in the app comes with the Exercises feature.',
+                  message: 'Workout started. Log your sets as you go.',
+                  actionLabel: workout.sessionId == null ? null : 'Open workout',
+                  onAction: workout.sessionId == null ? null : () => _open(workout.sessionId!),
                 ),
               ],
               if (busy) ...[

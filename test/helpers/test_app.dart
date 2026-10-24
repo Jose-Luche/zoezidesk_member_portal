@@ -21,6 +21,7 @@ import 'package:zoezidesk_member/data/api/classes_api.dart';
 import 'package:zoezidesk_member/data/api/dashboard_api.dart';
 import 'package:zoezidesk_member/data/api/payments_api.dart';
 import 'package:zoezidesk_member/data/api/profile_api.dart';
+import 'package:zoezidesk_member/data/api/workouts_api.dart';
 import 'package:zoezidesk_member/data/db/app_database.dart';
 import 'package:zoezidesk_member/data/sync/sync.dart';
 import 'package:zoezidesk_member/features/checkin/state/checkin_providers.dart';
@@ -41,6 +42,8 @@ class MockAttendanceApi extends Mock implements AttendanceApi {}
 class MockPaymentsApi extends Mock implements PaymentsApi {}
 
 class MockCheckoutApi extends Mock implements CheckoutApi {}
+
+class MockWorkoutsApi extends Mock implements WorkoutsApi {}
 
 class FakeBrightness implements BrightnessControl {
   final calls = <String>[];
@@ -78,6 +81,7 @@ class TestEnv {
   final attendanceApi = MockAttendanceApi();
   final paymentsApi = MockPaymentsApi();
   final checkoutApi = MockCheckoutApi();
+  final workoutsApi = MockWorkoutsApi();
 
   /// Links the app asked the phone to open; [openUrlResult] is the answer.
   final openedUrls = <Uri>[];
@@ -100,6 +104,7 @@ class TestEnv {
         attendanceApiProvider.overrideWithValue(attendanceApi),
         paymentsApiProvider.overrideWithValue(paymentsApi),
         checkoutApiProvider.overrideWithValue(checkoutApi),
+        workoutsApiProvider.overrideWithValue(workoutsApi),
         checkoutPollingProvider.overrideWithValue(
           (every: const Duration(seconds: 1), upTo: const Duration(seconds: 5)),
         ),
@@ -413,4 +418,73 @@ Map<String, dynamic> checkoutStatusJson(
       'failure_reason': failureReason,
       'paid_at': status == 'completed' ? testNow.toIso8601String() : null,
       'membership': startsAt == null ? null : {'starts_at': startsAt, 'expires_at': expiresAt},
+    };
+
+Map<String, dynamic> libraryExerciseJson(
+  int id,
+  String name, {
+  String muscle = 'chest',
+  Map<String, dynamic>? last,
+  String? instructions,
+}) =>
+    {
+      'id': id,
+      'name': name,
+      'muscle_group': muscle,
+      'category': 'chest',
+      'equipment': ['barbell'],
+      'difficulty': 'intermediate',
+      'instructions': instructions,
+      'demo_image_url': null,
+      'last': last,
+    };
+
+Map<String, dynamic> workoutLibraryJson([List<Map<String, dynamic>>? exercises]) => {
+      'exercises': exercises ??
+          [
+            libraryExerciseJson(1, 'Bench Press', last: {
+              'date': '2026-10-20',
+              'sets': [
+                {'weight': 60, 'reps': 8, 'duration_minutes': null, 'distance_km': null},
+                {'weight': 62.5, 'reps': 6, 'duration_minutes': null, 'distance_km': null},
+              ],
+            }),
+            libraryExerciseJson(2, 'Incline Dumbbell Press'),
+            libraryExerciseJson(3, 'Treadmill Run', muscle: 'cardio'),
+          ],
+      'generated_at': testNow.toIso8601String(),
+    };
+
+/// A session summary as the history endpoint returns it.
+Map<String, dynamic> workoutSummaryJson(
+  int id,
+  String clientId, {
+  String dayType = 'Chest Workout',
+  String date = '2026-10-21',
+  String status = 'completed',
+  int sets = 6,
+  num volume = 2400,
+  int? duration = 45,
+  String updatedAt = '2026-10-21T10:00:00+03:00',
+}) =>
+    {
+      'id': id,
+      'client_id': clientId,
+      'day_type': dayType,
+      'muscle_group': 'chest',
+      'session_date': date,
+      'started_at': '${date}T09:00:00+03:00',
+      'ended_at': status == 'completed' ? '${date}T09:45:00+03:00' : null,
+      'duration_minutes': status == 'completed' ? duration : null,
+      'status': status,
+      'rating': status == 'completed' ? 'good' : null,
+      'exercise_count': 2,
+      'total_sets': sets,
+      'total_volume': volume,
+      'updated_at': updatedAt,
+    };
+
+Map<String, dynamic> workoutHistoryJson(List<Map<String, dynamic>> rows, {int page = 1, int lastPage = 1}) => {
+      'data': rows,
+      'meta': {'current_page': page, 'last_page': lastPage, 'per_page': 20, 'total': rows.length},
     };

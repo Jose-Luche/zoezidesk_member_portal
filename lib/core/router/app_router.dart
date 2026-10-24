@@ -19,6 +19,11 @@ import '../../features/payments/screens/payments_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/profile/screens/membership_card_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/workouts/screens/exercise_picker_screen.dart';
+import '../../features/workouts/screens/records_screen.dart';
+import '../../features/workouts/screens/session_screen.dart';
+import '../../features/workouts/screens/workout_history_screen.dart';
+import '../../features/workouts/screens/workouts_hub_screen.dart';
 import 'routes.dart';
 
 /// Guard rules, kept pure so they can be unit tested.
@@ -63,7 +68,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(path: Routes.classes, builder: (_, _) => const ClassesScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: Routes.builder, builder: (_, _) => const BuilderScreen()),
+            GoRoute(path: Routes.workouts, builder: (_, _) => const WorkoutsHubScreen()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(path: Routes.more, builder: (_, _) => const MoreScreen()),
@@ -71,6 +76,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       // Outside the shell so it covers the bottom bar while editing.
+      GoRoute(path: Routes.builder, builder: (_, _) => const BuilderScreen()),
+      GoRoute(path: Routes.workoutHistory, builder: (_, _) => const WorkoutHistoryScreen()),
+      GoRoute(path: Routes.workoutRecords, builder: (_, _) => const RecordsScreen()),
+      GoRoute(
+        path: Routes.exercises,
+        builder: (_, state) => ExercisePickerScreen(sessionClientId: state.extra as String?),
+      ),
+      GoRoute(
+        path: '/workouts/session/:id',
+        builder: (_, state) => SessionScreen(clientId: state.pathParameters['id']!),
+      ),
       GoRoute(path: Routes.builderWorkout, builder: (_, _) => const WorkoutResultScreen()),
       GoRoute(path: Routes.membershipCard, builder: (_, _) => const MembershipCardScreen()),
       GoRoute(
@@ -131,7 +147,7 @@ class _AppShell extends StatelessWidget {
           NavigationDestination(
             icon: Icon(Icons.fitness_center_outlined),
             selectedIcon: Icon(Icons.fitness_center_rounded),
-            label: 'Builder',
+            label: 'Workouts',
           ),
           NavigationDestination(
             icon: Icon(Icons.menu_rounded),

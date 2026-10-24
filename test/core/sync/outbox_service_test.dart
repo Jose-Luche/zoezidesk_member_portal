@@ -166,6 +166,40 @@ void main() {
     await sub.cancel();
   });
 
+  test('coalescing kinds send only the newest entry per target', () async {
+    outbox
+      ..register('workout_sync', handler)
+      ..coalesce('workout_sync');
+    await queue('workout_sync', 1);
+    await queue('workout_sync', 2);
+    final newest = await queue('workout_sync', 1);
+    http
+      ..reply(200, {'n': 1})
+      ..reply(200, {'n': 2});
+
+    await outbox.drain();
+
+    expect(http.requests, hasLength(2));
+    expect(handler.sent.map((s) => s.$1.id), containsAll([newest.id]));
+    expect(handler.sent.where((s) => s.$1.targetId == 1).single.$1.id, newest.id);
+  });
+
+  test('an entry that fails while a newer one waits is dropped, not retried', () async {
+    outbox
+      ..register('workout_sync', handler)
+      ..coalesce('workout_sync');
+    final older = await queue('workout_sync', 1);
+    // The newer copy arrives while the older one is being sent.
+    http.fail(DioExceptionType.connectionError);
+    final sending = outbox.drain();
+    final newer = await queue('workout_sync', 1);
+    await sending;
+
+    final left = await rows();
+    expect(left.map((r) => r.id), isNot(contains(older.id)));
+    expect(left.map((r) => r.id), contains(newer.id));
+  });
+
   test('backoff doubles and caps at five minutes', () {
     expect(OutboxService.backoff(1), const Duration(seconds: 2));
     expect(OutboxService.backoff(3), const Duration(seconds: 8));

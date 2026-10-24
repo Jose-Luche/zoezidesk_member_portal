@@ -268,6 +268,56 @@ stays pending. An STK status query (`/mpesa/stkpushquery/v1/query`) on a
 schedule would settle these; it needs a change to `MpesaService`, so it is
 left for you to decide.
 
+## B8. Workout logging ✅ (Feature 10, commits `ba3984b`, `50adec3`)
+
+New controller `Api\Member\WorkoutsController`, matching the web
+WorkoutDashboard, WorkoutSession, WorkoutHistory and ExercisePRHistory pages.
+The older closure routes (`/workout-sessions/*`, `/exercise-prs/*`) are left
+as they were.
+
+- `GET /api/member/workouts/exercises`: the gym's whole active library (gym
+  and global exercises), with `last` = the member's sets for that exercise
+  the last time (within 180 days), to prefill new sets offline.
+- `GET /api/member/workouts?page=`: every session newest first, 20 per page:
+  `id`, `client_id`, `day_type`, `muscle_group`, `session_date`,
+  `started_at`, `ended_at`, `duration_minutes`, `status`, `rating`,
+  `exercise_count`, `total_sets`, `total_volume`, `updated_at`.
+- `GET /api/member/workouts/{id}`: one session with exercises and sets, each
+  set with `pr_types`.
+- `PUT /api/member/workouts/sync/{client_id}`: the whole session as one
+  document (exercises and sets, each with an app-generated `client_id`).
+  The server creates, updates or removes rows to match, so sending the same
+  document twice changes nothing. PR detection (`PRDetectionService`) and
+  goal updates run once, for new sets, oldest first; PRs are dated when the
+  set was lifted. Returns the document plus `new_prs`. 422 when an exercise
+  is not available at the member's gym, or when an id belongs to another
+  member's session.
+- `DELETE /api/member/workouts/sync/{client_id}`: discard; repeating it is
+  fine.
+- `GET /api/member/workouts/prs`: totals plus records grouped by exercise.
+
+Migration `2026_10_24_000001_add_client_uuid_to_workout_tables`: nullable,
+unique `client_uuid` on `workout_sessions`, `workout_exercises` and
+`workout_sets` (additive). Rows made on the web get one the first time the
+app reads them.
+
+Times arrive from the app in UTC and are stored in the app timezone, as
+`now()` stores them.
+
+Rules that differ from the web (decided for Feature 10):
+
+- "Repeat" copies the exercises but not the sets; the last time's numbers
+  prefill each new set instead. The web copies the old sets as if done.
+- A "Legs" workout offers quads, hamstrings, glutes and calves exercises.
+  On the web the Legs picker is empty, because no exercise is tagged
+  `legs` (a web bug, not changed).
+- Only workouts in progress are edited in the app; finished ones are
+  read-only there.
+- If the same in-progress session were edited on the web and in the app at
+  once, the app's latest document wins for that session.
+
+Not in the app yet: history filters, workout analytics and muscle progress.
+
 ## B6. `changes_since` ⏳
 
 An optional `?since=<ISO8601>` on list endpoints where it is cheap, so the
@@ -298,6 +348,11 @@ newest *active* membership. Eager loading and `whereHas` are covered by tests.
   wipes local data but the server token stays valid until it is revoked.
 
 ## Web-only issues noticed (not changed)
+
+- The workout Legs picker is empty: sessions accept `legs` but exercises
+  are tagged by part (quads, hamstrings, glutes, calves).
+- `Exercise::scopeSearch` uses an ungrouped `orWhere`, so the old
+  `/api/member/exercises?search=` can return other gyms' exercises.
 
 - `/member/member/classes`: the route has a doubled `member` prefix.
 - `/member/workouts/history` is registered after `/member/workouts/{session}`

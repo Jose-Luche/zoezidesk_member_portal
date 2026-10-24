@@ -71,6 +71,12 @@ class OutboxService {
   /// Features register how a kind of write updates local data.
   void register(String kind, OutboxHandler handler) => _handlers[kind] = handler;
 
+  /// For kinds whose entries each carry the whole latest state (e.g. a
+  /// workout), an entry is dropped once a newer one for the same target is
+  /// queued: only the newest needs to reach the server.
+  void coalesce(String kind) => _coalescing.add(kind);
+  final _coalescing = <String>{};
+
   static Duration backoff(int attempts) {
     final seconds = pow(2, attempts.clamp(1, 16)).toInt();
     final d = Duration(seconds: seconds);
@@ -175,6 +181,10 @@ class OutboxService {
 
   /// Returns false when the queue must stop.
   Future<bool> _send(OutboxEntry entry) async {
+    if (await _superseded(entry)) {
+      await (_db.delete(_db.outbox)..where((o) => o.id.equals(entry.id))).go();
+      return true;
+    }
     await _setStatus(entry, OutboxStatus.sending);
     try {
       final res = await _dio.request<dynamic>(
@@ -204,7 +214,11 @@ class OutboxService {
           status == null ||
           status >= 500;
       if (transient) {
-        await _retryLater(entry, failure.message);
+        if (await _superseded(entry)) {
+          await (_db.delete(_db.outbox)..where((o) => o.id.equals(entry.id))).go();
+        } else {
+          await _retryLater(entry, failure.message);
+        }
       } else {
         await (_db.update(_db.outbox)..where((o) => o.id.equals(entry.id))).write(OutboxCompanion(
               status: const Value(OutboxStatus.failed),
@@ -217,6 +231,20 @@ class OutboxService {
       }
       return true;
     }
+  }
+
+  /// A newer entry for the same target replaces this one.
+  Future<bool> _superseded(OutboxEntry entry) async {
+    if (!_coalescing.contains(entry.kind)) return false;
+    final newer = await (_db.select(_db.outbox)
+          ..where((o) =>
+              o.kind.equals(entry.kind) &
+              o.targetId.equals(entry.targetId) &
+              o.id.isBiggerThanValue(entry.id) &
+              o.status.equals(OutboxStatus.pending))
+          ..limit(1))
+        .getSingleOrNull();
+    return newer != null;
   }
 
   Future<void> _retryLater(OutboxEntry entry, String reason) {

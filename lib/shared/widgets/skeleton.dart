@@ -31,9 +31,13 @@ class SkeletonBox extends StatelessWidget {
 
 /// Placeholder for a list of card rows while the first load runs.
 class SkeletonList extends StatelessWidget {
-  const SkeletonList({super.key, this.itemCount = 6});
+  const SkeletonList({super.key, this.itemCount = 6}) : inline = false;
+
+  /// For use inside another scrolling list: sized to its rows, no padding.
+  const SkeletonList.inline({super.key, this.itemCount = 3}) : inline = true;
 
   final int itemCount;
+  final bool inline;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +45,8 @@ class SkeletonList extends StatelessWidget {
       label: 'Loading',
       child: ListView.separated(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(AppSpace.md),
+        shrinkWrap: inline,
+        padding: inline ? EdgeInsets.zero : const EdgeInsets.all(AppSpace.md),
         itemCount: itemCount,
         separatorBuilder: (_, _) => const SizedBox(height: AppSpace.sm),
         itemBuilder: (_, _) => const SkeletonListTile(),

@@ -183,15 +183,18 @@ class WorkoutEditor extends Notifier<AsyncValue<void>> {
   Future<bool> saveTemplate(GuidedWorkout w, String name) =>
       _run((r) => r.saveTemplate(w.id, name.trim()));
 
-  Future<bool> start(GuidedWorkout w) {
+  /// Returns the new session's server id, or null if it did not start.
+  Future<int?> start(GuidedWorkout w) async {
     if (w.exercises.isEmpty) {
       state = AsyncError(
         const ValidationFailure('Add at least one exercise before starting.'),
         StackTrace.current,
       );
-      return Future.value(false);
+      return null;
     }
-    return _run((r) => r.startSession(w.id));
+    int? sessionId;
+    final ok = await _run((r) async => sessionId = await r.startSession(w.id));
+    return ok ? sessionId : null;
   }
 }
 

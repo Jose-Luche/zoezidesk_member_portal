@@ -5,6 +5,14 @@ abstract final class Routes {
   static const home = '/home';
   static const classes = '/classes';
   static const builder = '/builder';
+  static const workouts = '/workouts';
+  static const workoutHistory = '/workouts/history';
+  static const workoutRecords = '/workouts/records';
+
+  /// The exercise library. With a session id as `extra`, picking an
+  /// exercise adds it to that session.
+  static const exercises = '/workouts/exercises';
+  static String workoutSession(String clientId) => '/workouts/session/$clientId';
   static const builderWorkout = '/builder/workout';
   static const more = '/more';
   static const profile = '/profile';

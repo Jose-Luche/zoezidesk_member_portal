@@ -32,7 +32,9 @@ void main() {
   Future<void> openBuilder(WidgetTester tester) async {
     await tester.pumpWidget(ProviderScope(overrides: env.overrides, child: const ZoeziApp()));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Builder'));
+    await tester.tap(find.text('Workouts'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Build me a workout'));
     await tester.pumpAndSettle();
   }
 
@@ -194,17 +196,32 @@ void main() {
       expect(find.text('Saved as template.'), findsOneWidget);
     });
 
-    testWidgets('start workout locks editing', (tester) async {
+    testWidgets('start workout opens it for logging and locks editing', (tester) async {
       when(() => env.builderApi.startSession(9)).thenAnswer((_) async => 55);
+      when(() => env.workoutsApi.show(55)).thenAnswer((_) async => {
+            'session': workoutSummaryJson(55, 'srv-55', dayType: 'Guided Workout', status: 'in_progress', date: '2026-10-23'),
+            'exercises': [
+              {'client_id': 'we-1', 'exercise_id': 1, 'name': 'Bench Press', 'muscle_group': 'chest', 'position': 1, 'notes': null, 'sets': []},
+            ],
+          });
       await openWorkout(tester);
       when(() => env.builderApi.workout(9)).thenAnswer((_) async => guidedWorkoutJson(status: 'in_progress'));
 
       await tapText(tester, 'Start workout');
 
       verify(() => env.builderApi.startSession(9)).called(1);
-      // Scrolled back up so the banner is visible.
-      expect(find.textContaining('Workout started. Log your sets'), findsOneWidget);
-      expect(find.text('Workout started.'), findsOneWidget); // snackbar
+      // The session screen, ready to log.
+      expect(find.text('Guided Workout'), findsOneWidget);
+      expect(find.text('Log first set'), findsOneWidget);
+
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.textContaining('Workout started. Log your sets'),
+        -300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Open workout'), findsOneWidget);
       expect(find.text('Start workout'), findsNothing);
       final moveUp = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.delete_outline_rounded).first);
       expect(moveUp.onPressed, isNull);

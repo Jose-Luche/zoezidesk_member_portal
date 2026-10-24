@@ -8,8 +8,11 @@ import '../../core/network/dio_client.dart';
 import '../../core/sync/outbox_service.dart';
 import '../../core/utils/clock.dart';
 import '../api/classes_api.dart';
+import '../api/workouts_api.dart';
 import '../db/app_database.dart';
+import '../db/encrypted_cache.dart';
 import '../repositories/classes_repository.dart';
+import '../repositories/workouts_repository.dart';
 
 final outboxServiceProvider = Provider<OutboxService>((ref) {
   final service = OutboxService(
@@ -32,6 +35,23 @@ final classesRepositoryProvider = Provider<ClassesRepository>((ref) {
   outbox
     ..register(ClassOutboxKind.book, repo.outboxHandler)
     ..register(ClassOutboxKind.cancel, repo.outboxHandler);
+  return repo;
+});
+
+final workoutsRepositoryProvider = Provider<WorkoutsRepository>((ref) {
+  final outbox = ref.watch(outboxServiceProvider);
+  final repo = WorkoutsRepository(
+    db: ref.watch(appDatabaseProvider),
+    cache: ref.watch(encryptedCacheProvider),
+    api: ref.watch(workoutsApiProvider),
+    outbox: outbox,
+    clock: ref.watch(clockProvider),
+  );
+  outbox
+    ..register(WorkoutOutboxKind.sync, repo.outboxHandler)
+    ..register(WorkoutOutboxKind.discard, repo.outboxHandler)
+    ..coalesce(WorkoutOutboxKind.sync);
+  ref.onDispose(repo.dispose);
   return repo;
 });
 
@@ -65,6 +85,7 @@ class SyncRunner {
 final syncRunnerProvider = Provider.autoDispose<SyncRunner>((ref) {
   // Create every feature that registers outbox handlers before sending.
   ref.watch(classesRepositoryProvider);
+  ref.watch(workoutsRepositoryProvider);
   final runner = SyncRunner(ref.watch(outboxServiceProvider), ref.watch(connectivityChangesProvider));
   ref.onDispose(runner.dispose);
   return runner;

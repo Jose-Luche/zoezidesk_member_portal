@@ -35,9 +35,28 @@ code in debug builds, so no WhatsApp message is needed.
 ## Build a release
 
 ```sh
-flutter build appbundle --release --dart-define-from-file=env/prod.json
+flutter build apk --release --dart-define-from-file=env/prod.json        # one APK for every phone
 flutter build apk --release --split-per-abi --dart-define-from-file=env/prod.json
+flutter build appbundle --release --dart-define-from-file=env/prod.json  # for Google Play
 ```
+
+Raise `version:` in `pubspec.yaml` (both parts, e.g. `1.0.1+2`) for every
+build you hand out. Android only installs an update with a higher version
+code.
+
+### Sharing APKs without Google Play
+
+Until the app is on Google Play, members install the APK directly (allowing
+"install unknown apps" once) and get updates only when you send them a new
+APK.
+
+- Share the universal `app-release.apk` (about 65 MB). It installs on every
+  phone, including older 32-bit ones.
+- Don't mix it with the per-CPU APKs from `--split-per-abi`. Those get
+  version codes 1001 (32-bit) and 2001 (64-bit) for the same release, so a
+  phone that has one of them refuses a later universal APK until its version
+  code passes that number.
+- Publish the SHA-256 checksum with each APK so members can tell it is yours.
 
 ### Signing
 
@@ -45,9 +64,11 @@ Release builds are signed with the key in `android/key.properties`
 (gitignored, as are `*.jks` files). Without that file they fall back to the
 debug key and Gradle warns; Google Play rejects those builds.
 
-Create the upload key once and keep the file and passwords somewhere safe
-(a password manager plus an offline backup). Losing it means asking Google
-to reset the upload key.
+Create the key once and keep the file and passwords somewhere safe (a
+password manager plus an offline backup). Every update must be signed with
+the same key: while APKs are shared directly, losing it means members have
+to uninstall the app (and lose unsent changes) to install a new one. Once on
+Google Play, losing it means asking Google to reset the upload key.
 
 ```sh
 keytool -genkeypair -v -keystore ~/zoezidesk-upload.jks -storetype PKCS12   -keyalg RSA -keysize 2048 -validity 10000 -alias upload
@@ -62,8 +83,9 @@ keyAlias=upload
 keyPassword=...
 ```
 
-Use Play App Signing: Google keeps the app signing key, and this file only
-signs uploads.
+When the app moves to Google Play, use Play App Signing and choose to use
+this existing key as the app signing key, so phones that installed a shared
+APK can update from Play. Otherwise they would have to uninstall first.
 
 ### Size (1.0.0, arm64)
 

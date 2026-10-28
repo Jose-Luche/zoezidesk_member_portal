@@ -256,6 +256,8 @@ class _PaymentTile extends StatelessWidget {
                   ),
                   'completed' => const _StatusBadge(label: 'Paid', tone: BadgeTone.success),
                   'failed' => const _StatusBadge(label: 'Failed', tone: BadgeTone.danger),
+                  'voided' => const _StatusBadge(label: 'Voided', tone: BadgeTone.neutral),
+                  'cancelled' => const _StatusBadge(label: 'Cancelled', tone: BadgeTone.neutral),
                   _ => const _StatusBadge(label: 'Pending', tone: BadgeTone.warning),
                 },
               ],

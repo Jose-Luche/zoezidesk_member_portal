@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../data/repositories/nutrition_repository.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../nutrition_format.dart';
 import '../state/nutrition_providers.dart';
 
@@ -88,7 +91,6 @@ class _NutritionGoalScreenState extends ConsumerState<NutritionGoalScreen> {
   Widget build(BuildContext context) {
     final cached = ref.watch(nutritionGoalProvider);
     final saving = ref.watch(goalControllerProvider);
-    final text = Theme.of(context).textTheme;
     final settings = cached.value?.data;
     if (settings != null && !_filled) {
       _filled = true;
@@ -101,44 +103,40 @@ class _NutritionGoalScreenState extends ConsumerState<NutritionGoalScreen> {
       body = const SkeletonList();
     } else if (settings == null) {
       body = const StateMessage(
-        icon: Icons.flag_rounded,
+        icon: AppIcons.flag,
         title: 'Goal not loaded yet',
         message: 'Connect to the internet to set your daily goal.',
       );
     } else {
       final failure = saving.error;
       body = ListView(
-        padding: const EdgeInsets.all(AppSpace.md),
+        padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.lg),
         children: [
-          Text('Start from a goal', style: text.titleMedium),
-          const SizedBox(height: AppSpace.sm),
+          const SectionHeader('Start from a goal'),
           for (final p in settings.presets)
-            Card(
-              margin: const EdgeInsets.only(bottom: AppSpace.sm),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                side: BorderSide(
-                  color: _type == p.goalType ? context.palette.accentText : context.palette.border,
-                  width: _type == p.goalType ? 2 : 1,
-                ),
-              ),
-              child: ListTile(
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpace.sm),
+              child: Semantics(
                 selected: _type == p.goalType,
-                title: Text(p.name ?? p.goalType, style: text.titleSmall),
-                subtitle: Text(
-                  '${formatKcal(p.calories.toDouble())} · protein ${formatMacro(p.protein)} · '
-                  'carbs ${formatMacro(p.carbs)} · fat ${formatMacro(p.fat)}',
-                  style: text.bodySmall,
+                inMutuallyExclusiveGroup: true,
+                child: SelectableSurface(
+                  selected: _type == p.goalType,
+                  onTap: () => setState(() => _fill(p)),
+                  child: ListRow(
+                    icon: _type == p.goalType ? AppIcons.circleDot : AppIcons.circle,
+                    iconColor: _type == p.goalType ? context.palette.accentText : context.palette.textMuted,
+                    title: p.name ?? p.goalType,
+                    subtitle: '${formatKcal(p.calories.toDouble())} · protein ${formatMacro(p.protein)} · '
+                        'carbs ${formatMacro(p.carbs)} · fat ${formatMacro(p.fat)}',
+                    trailing: settings.goal?.goalType == p.goalType
+                        ? const AppBadge(label: 'Current', tone: BadgeTone.success, icon: AppIcons.circleCheck)
+                        : null,
+                  ),
                 ),
-                trailing: settings.goal?.goalType == p.goalType
-                    ? const AppBadge(label: 'Current', tone: BadgeTone.neutral)
-                    : null,
-                onTap: () => setState(() => _fill(p)),
               ),
             ),
-          const SizedBox(height: AppSpace.md),
-          Text('Adjust your targets', style: text.titleMedium),
-          const SizedBox(height: AppSpace.sm),
+          const SizedBox(height: AppSpace.lg),
+          const SectionHeader('Adjust your targets'),
           _field(_calories, 'Calories (kcal)', decimals: false),
           _field(_protein, 'Protein (g)'),
           _field(_carbs, 'Carbs (g)'),
@@ -146,6 +144,7 @@ class _NutritionGoalScreenState extends ConsumerState<NutritionGoalScreen> {
           if (_error != null || failure is AppFailure) ...[
             const SizedBox(height: AppSpace.sm),
             InfoBanner(
+              icon: failure is NetworkFailure && _error == null ? AppIcons.cloudOff : null,
               tone: BadgeTone.danger,
               message: _error ??
                   (failure is NetworkFailure
@@ -153,8 +152,9 @@ class _NutritionGoalScreenState extends ConsumerState<NutritionGoalScreen> {
                       : (failure! as AppFailure).message),
             ),
           ],
-          const SizedBox(height: AppSpace.md),
+          const SizedBox(height: AppSpace.lg),
           FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(AppSizes.sheetButton)),
             onPressed: saving.isLoading ? null : _save,
             child: Text(saving.isLoading ? 'Saving…' : 'Save daily goal'),
           ),
@@ -162,17 +162,19 @@ class _NutritionGoalScreenState extends ConsumerState<NutritionGoalScreen> {
       );
     }
 
-    return Scaffold(appBar: AppBar(title: const Text('Daily goal')), body: body);
+    return Scaffold(appBar: const AppTopBar(title: 'Daily goal'), body: body);
   }
 
   Widget _field(TextEditingController c, String label, {bool decimals = true}) => Padding(
-        padding: const EdgeInsets.only(bottom: AppSpace.sm),
-        child: TextField(
-          controller: c,
-          keyboardType: TextInputType.numberWithOptions(decimal: decimals),
-          inputFormatters: [FilteringTextInputFormatter.allow(decimals ? RegExp(r'[0-9.,]') : RegExp(r'[0-9]'))],
-          onChanged: (_) => setState(() => _error = null),
-          decoration: InputDecoration(labelText: label),
+        padding: const EdgeInsets.only(bottom: AppSpace.md),
+        child: LabeledField(
+          label: label,
+          child: TextField(
+            controller: c,
+            keyboardType: TextInputType.numberWithOptions(decimal: decimals),
+            inputFormatters: [FilteringTextInputFormatter.allow(decimals ? RegExp(r'[0-9.,]') : RegExp(r'[0-9]'))],
+            onChanged: (_) => setState(() => _error = null),
+          ),
         ),
       );
 }

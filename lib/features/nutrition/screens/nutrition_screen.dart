@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/errors/app_failure.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../data/db/app_database.dart';
@@ -12,9 +13,11 @@ import '../../../data/repositories/nutrition_repository.dart';
 import '../../../data/repositories/workouts_repository.dart' show SyncState;
 import '../../../data/sync/sync.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../../shared/widgets/sync_status.dart';
 import '../nutrition_format.dart';
 import '../state/nutrition_providers.dart';
@@ -79,41 +82,46 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen> {
         : DateFormat('EEE d MMM').format(day);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Nutrition'),
+      appBar: AppTopBar(
+        title: 'Nutrition',
         actions: [
           TextButton(onPressed: () => context.push(Routes.nutritionGoal), child: const Text('Daily goal')),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        // The primary action: orange with dark text, as the buttons are.
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        // The primary action: terracotta with an ink label, as the buttons are.
         onPressed: () => context.push(Routes.nutritionAdd, extra: (day: day, meal: day == today ? mealForTime(now) : 'lunch')),
-        icon: const Icon(Icons.add_rounded),
+        icon: const AppIcon(AppIcons.plus),
         label: const Text('Add food'),
       ),
       body: RefreshIndicator(
         onRefresh: controller.refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.sm, AppSpace.md, AppSpace.xxxl + AppSpace.lg),
+          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter, AppSpace.xxxl + AppSpace.lg),
           children: [
             Row(
               children: [
-                IconButton(
+                Expanded(
+                  child: Semantics(
+                    liveRegion: true,
+                    child: Text(dayLabel, style: text.titleLarge),
+                  ),
+                ),
+                IconButton.outlined(
                   tooltip: 'Previous day',
                   onPressed: controller.previousDay,
-                  icon: const Icon(Icons.chevron_left_rounded),
+                  icon: const AppIcon(AppIcons.chevronLeft),
                 ),
-                Expanded(child: Text(dayLabel, style: text.titleLarge, textAlign: TextAlign.center)),
-                IconButton(
+                const SizedBox(width: AppSpace.sm),
+                IconButton.outlined(
                   tooltip: 'Next day',
                   onPressed: controller.canGoForward ? controller.nextDay : null,
-                  icon: const Icon(Icons.chevron_right_rounded),
+                  icon: const AppIcon(AppIcons.chevronRight),
                 ),
               ],
             ),
+            const SizedBox(height: AppSpace.sm),
             if (fetchedAt != null) ...[
               SyncStatus(
                 fetchedAt: fetchedAt,
@@ -130,7 +138,7 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen> {
                 ],
               AsyncData(:final value) => [
                   _Totals(total: Macros.sum(value), goal: goal),
-                  const SizedBox(height: AppSpace.md),
+                  const SizedBox(height: AppSpace.lg),
                   for (final meal in mealTypes)
                     if (value.any((e) => e.mealType == meal) || const {'breakfast', 'lunch', 'dinner'}.contains(meal))
                       _MealSection(
@@ -159,14 +167,11 @@ class _Totals extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final p = context.palette;
     final g = goal;
     final left = g == null ? null : g.calories - total.calories;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpace.md),
-        child: Column(
+    return SurfaceCard(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
@@ -174,14 +179,13 @@ class _Totals extends StatelessWidget {
               children: [
                 Expanded(child: Text(formatKcal(total.calories), style: text.headlineMedium)),
                 if (left != null)
-                  Text(
-                    left >= 0 ? '${formatKcal(left)} left' : '${formatKcal(-left)} over',
-                    style: text.bodyMedium?.copyWith(color: left >= 0 ? null : p.warning),
-                  ),
+                  left >= 0
+                      ? Text('${formatKcal(left)} left', style: text.bodyMedium)
+                      : AppBadge(label: '${formatKcal(-left)} over', tone: BadgeTone.warning, icon: AppIcons.circleAlert),
               ],
             ),
             if (g == null) ...[
-              const SizedBox(height: AppSpace.sm),
+              const SizedBox(height: AppSpace.md),
               InfoBanner(
                 tone: BadgeTone.highlight,
                 message: 'Set a daily goal to see how your day adds up.',
@@ -197,7 +201,6 @@ class _Totals extends StatelessWidget {
             ],
           ],
         ),
-      ),
     );
   }
 }
@@ -217,7 +220,7 @@ class _Bar extends StatelessWidget {
     final share = target <= 0 ? 0.0 : value / target;
     final n = NumberFormat('#,##0', 'en_KE');
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpace.sm),
+      padding: const EdgeInsets.only(top: 12),
       child: Semantics(
         label: '$label ${n.format(value)} of ${n.format(target)} $unit',
         excludeSemantics: true,
@@ -226,18 +229,18 @@ class _Bar extends StatelessWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text(label, style: text.bodyMedium)),
+                Expanded(child: Text(label, style: text.titleSmall)),
+                if (share > 1.05) ...[
+                  AppIcon(AppIcons.circleAlert, size: AppSizes.iconBadge, color: p.warning),
+                  const SizedBox(width: AppSpace.xs),
+                ],
                 Text('${n.format(value)} / ${n.format(target)} $unit', style: text.bodySmall),
               ],
             ),
-            const SizedBox(height: AppSpace.xs),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.control),
-              child: LinearProgressIndicator(
-                value: share.clamp(0, 1).toDouble(),
-                minHeight: AppSpace.sm,
-                color: share > 1.05 ? p.warning : null,
-              ),
+            const SizedBox(height: 6),
+            LinearProgressIndicator(
+              value: share.clamp(0, 1).toDouble(),
+              color: share > 1.05 ? p.warning : null,
             ),
           ],
         ),
@@ -265,38 +268,59 @@ class _MealSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final total = Macros.sum(entries);
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpace.sm),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.xs, AppSpace.xs, AppSpace.xs),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.sm),
+      child: SurfaceCard(
+        padding: const EdgeInsets.fromLTRB(0, AppSpace.xs, 0, AppSpace.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(child: Text(mealLabel(meal), style: text.titleMedium)),
-                if (entries.isNotEmpty) Text(formatKcal(total.calories), style: text.bodySmall),
-                IconButton(tooltip: 'Add to ${mealLabel(meal).toLowerCase()}', onPressed: onAdd, icon: const Icon(Icons.add_rounded)),
-              ],
+            Padding(
+              padding: const EdgeInsets.only(left: AppSpace.gutter, right: AppSpace.xs),
+              child: Row(
+                children: [
+                  Expanded(child: Text(mealLabel(meal), style: text.titleMedium)),
+                  if (entries.isNotEmpty) Text(formatKcal(total.calories), style: text.bodySmall),
+                  IconButton(
+                    tooltip: 'Add to ${mealLabel(meal).toLowerCase()}',
+                    onPressed: onAdd,
+                    icon: AppIcon(AppIcons.plus, color: context.palette.accentText),
+                  ),
+                ],
+              ),
             ),
             if (entries.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: AppSpace.sm),
+                padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter, AppSpace.xs),
                 child: Text('Nothing logged.', style: text.bodySmall),
               ),
             for (final e in entries)
-              ListTile(
-                contentPadding: const EdgeInsets.only(right: AppSpace.sm),
-                title: Text(e.foodName, style: text.bodyLarge),
-                subtitle: e.syncState == SyncState.failed
-                    ? Text('Not saved: ${e.syncError ?? 'refused'}', style: text.bodySmall?.copyWith(color: context.palette.danger))
-                    : Text('${formatGrams(e.quantityG)} · ${formatKcal(e.calories)}', style: text.bodySmall),
-                trailing: switch (e.syncState) {
-                  SyncState.failed => TextButton(onPressed: () => onRetry(e), child: const Text('Retry')),
-                  SyncState.pending => const AppBadge(label: 'Not sent yet', tone: BadgeTone.warning),
-                  _ => null,
-                },
-                onTap: () => onEdit(e),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ListRow(
+                    title: e.foodName,
+                    titleStyle: text.bodyLarge,
+                    subtitle: e.syncState == SyncState.failed
+                        ? 'Not saved: ${e.syncError ?? 'refused'}'
+                        : '${formatGrams(e.quantityG)} · ${formatKcal(e.calories)}',
+                    trailing: switch (e.syncState) {
+                      SyncState.failed => const AppBadge(label: 'Not saved', tone: BadgeTone.danger, icon: AppIcons.circleAlert),
+                      SyncState.pending => const AppBadge(label: 'Not sent yet', tone: BadgeTone.warning, icon: AppIcons.clock),
+                      _ => null,
+                    },
+                    chevron: false,
+                    onTap: () => onEdit(e),
+                  ),
+                  if (e.syncState == SyncState.failed)
+                    Padding(
+                      padding: const EdgeInsets.only(left: AppSpace.sm),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(onPressed: () => onRetry(e), child: const Text('Retry')),
+                      ),
+                    ),
+                ],
               ),
           ],
         ),

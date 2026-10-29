@@ -4,12 +4,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../data/dto/builder_dto.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../state/builder_providers.dart';
 import '../widgets/builder_steps.dart';
 
@@ -71,7 +74,7 @@ class _BuilderScreenState extends ConsumerState<BuilderScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout builder')),
+      appBar: const AppTopBar(title: 'Workout builder'),
       body: body,
     );
   }
@@ -86,17 +89,16 @@ class _LastWorkoutCard extends ConsumerWidget {
     if (workout == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.lg),
-      child: Card(
-        child: ListTile(
-          leading: const Icon(Icons.history_rounded),
-          title: const Text('Your last workout'),
-          subtitle: Text(
-            '${workout.exercises.length} exercises'
-            '${workout.estimatedDurationMinutes == null ? '' : ' · ${workout.estimatedDurationMinutes} min'}',
+      child: ListCard(
+        children: [
+          ListRow(
+            icon: AppIcons.history,
+            title: 'Your last workout',
+            subtitle: '${workout.exercises.length} exercises'
+                '${workout.estimatedDurationMinutes == null ? '' : ' · ${workout.estimatedDurationMinutes} min'}',
+            onTap: () => context.push(Routes.builderWorkout),
           ),
-          trailing: const Icon(Icons.chevron_right_rounded),
-          onTap: () => context.push(Routes.builderWorkout),
-        ),
+        ],
       ),
     );
   }
@@ -121,31 +123,38 @@ class _StepView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.sm, AppSpace.md, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Step ${form.number} of ${BuilderFormState.count}', style: text.bodySmall),
-              const SizedBox(height: AppSpace.xs),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.control),
-                child: LinearProgressIndicator(
-                  value: form.number / BuilderFormState.count,
-                  minHeight: AppSpace.xs,
+          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter, 0),
+          child: Semantics(
+            label: 'Step ${form.number} of ${BuilderFormState.count}',
+            excludeSemantics: true,
+            child: Row(
+              children: [
+                Text(
+                  'Step ${form.number} of ${BuilderFormState.count}',
+                  style: text.titleSmall?.copyWith(color: context.palette.accentText),
                 ),
-              ),
-            ],
+                const SizedBox(width: AppSpace.md),
+                Expanded(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(end: form.number / BuilderFormState.count),
+                    duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : AppMotion.medium,
+                    curve: AppMotion.curve,
+                    builder: (_, v, _) => LinearProgressIndicator(value: v),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(AppSpace.md),
+            padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.lg, AppSpace.gutter, AppSpace.lg),
             children: [
               if (form.step == BuilderStep.energy) const _LastWorkoutCard(),
-              Text(copy.title, style: text.headlineMedium),
+              Semantics(header: true, child: Text(copy.title, style: text.headlineMedium)),
               if (copy.help != null) ...[
-                const SizedBox(height: AppSpace.xs),
-                Text(copy.help!, style: text.bodySmall),
+                const SizedBox(height: AppSpace.sm),
+                Text(copy.help!, style: text.bodyMedium?.copyWith(color: context.palette.textMuted)),
               ],
               const SizedBox(height: AppSpace.lg),
               BuilderStepBody(options: options),
@@ -159,12 +168,13 @@ class _StepView extends ConsumerWidget {
         SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.all(AppSpace.md),
+            padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.md),
             child: Row(
               children: [
                 if (form.step.index > 0) ...[
                   Expanded(
                     child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(AppSizes.sheetButton)),
                       onPressed: actions.isLoading ? null : controller.back,
                       child: const Text('Back'),
                     ),
@@ -174,6 +184,7 @@ class _StepView extends ConsumerWidget {
                 Expanded(
                   flex: 2,
                   child: FilledButton(
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(AppSizes.sheetButton)),
                     onPressed: !form.canAdvance || actions.isLoading
                         ? null
                         : form.isLast
@@ -205,7 +216,7 @@ class _BuildError extends StatelessWidget {
   @override
   Widget build(BuildContext context) => InfoBanner(
         tone: BadgeTone.danger,
-        icon: error is NetworkFailure ? Icons.cloud_off_rounded : null,
+        icon: error is NetworkFailure ? AppIcons.cloudOff : null,
         message: error is NetworkFailure
             ? 'You are offline. Building a workout needs an internet connection.'
             : error.message,

@@ -61,15 +61,15 @@ void main() {
     expect(env.store.values, {DevicePreferences.themeModeKey: 'light'});
   });
 
-  settingsTest('dark by default; choosing light applies and is saved', (tester) async {
+  settingsTest('light by default; choosing dark applies and is saved', (tester) async {
     await openSettings(tester);
-    expect(appMode(tester), ThemeMode.dark);
+    expect(appMode(tester), ThemeMode.light);
 
-    await tester.tap(find.text('Light'));
+    await tester.tap(find.text('Dark'));
     await settle(tester);
 
-    expect(appMode(tester), ThemeMode.light);
-    expect(env.store.values[DevicePreferences.themeModeKey], 'light');
+    expect(appMode(tester), ThemeMode.dark);
+    expect(env.store.values[DevicePreferences.themeModeKey], 'dark');
 
     await tester.tap(find.text('Match my phone'));
     await settle(tester);
@@ -77,8 +77,8 @@ void main() {
   });
 
   settingsTest('the saved theme is used from the first frame', (tester) async {
-    await openSettings(tester, extra: [initialThemeModeProvider.overrideWithValue(ThemeMode.light)]);
-    expect(appMode(tester), ThemeMode.light);
+    await openSettings(tester, extra: [initialThemeModeProvider.overrideWithValue(ThemeMode.dark)]);
+    expect(appMode(tester), ThemeMode.dark);
   });
 
   settingsTest('unsent changes are shown and can be sent now', (tester) async {
@@ -92,7 +92,7 @@ void main() {
           path: '/member/classes/1/book',
         ));
     await settle(tester);
-    expect(find.text('1 change waiting to send'), findsOneWidget);
+    expect(find.textContaining('1 change is waiting to be sent'), findsOneWidget);
 
     final before = env.http.requests.length;
     await tester.tap(find.text('Send now'));

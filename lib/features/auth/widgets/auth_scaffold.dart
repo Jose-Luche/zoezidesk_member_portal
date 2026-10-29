@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 
-/// Shared layout for the login steps: brand mark, title, subtitle, form.
+/// Shared layout for the login steps: brand mark, title, subtitle, form,
+/// left-aligned over a soft circle that bleeds off the top-right corner.
 class AuthScaffold extends StatelessWidget {
   const AuthScaffold({
     super.key,
@@ -21,32 +24,60 @@ class AuthScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final p = context.palette;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      appBar: showBack ? AppBar() : null,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpace.lg),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const BrandMark(),
-                  const SizedBox(height: AppSpace.xl),
-                  Text(title, style: text.headlineLarge),
-                  const SizedBox(height: AppSpace.sm),
-                  Text(
-                    subtitle,
-                    style: text.bodyMedium?.copyWith(color: context.palette.textMuted),
-                  ),
-                  const SizedBox(height: AppSpace.lg),
-                  child,
-                ],
+      body: Stack(
+        children: [
+          Positioned(
+            top: -120,
+            right: -110,
+            child: ExcludeSemantics(
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  color: dark ? AppColors.sage800 : AppColors.sage200,
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
           ),
-        ),
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (showBack)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: AppSpace.xs),
+                    child: Align(alignment: Alignment.centerLeft, child: AppBackControl()),
+                  ),
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.lg, AppSpace.gutter, AppSpace.xl),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 440),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const BrandMark(),
+                            const SizedBox(height: AppSpace.xl + AppSpace.sm),
+                            Semantics(header: true, child: Text(title, style: text.headlineLarge)),
+                            const SizedBox(height: AppSpace.sm),
+                            Text(subtitle, style: text.bodyLarge?.copyWith(color: p.textMuted)),
+                            const SizedBox(height: AppSpace.lg),
+                            child,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -73,7 +104,7 @@ class BrandMark extends StatelessWidget {
   }
 }
 
-/// Inline error under a form, with an icon so it does not rely on color.
+/// Inline error under a form: alert icon and plain words, never color alone.
 class FormErrorText extends StatelessWidget {
   const FormErrorText(this.message, {super.key});
 
@@ -81,21 +112,25 @@ class FormErrorText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final danger = context.palette.danger;
+    final p = context.palette;
     return Semantics(
       liveRegion: true,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.error_outline_rounded, color: danger, size: AppSizes.icon),
-          const SizedBox(width: AppSpace.sm),
-          Expanded(
-            child: Text(
-              message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: danger),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: 12),
+        decoration: BoxDecoration(color: p.dangerTint, borderRadius: BorderRadius.circular(AppRadius.tile)),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppIcon(AppIcons.circleAlert, color: p.danger, size: AppSizes.iconRow),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: p.danger),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

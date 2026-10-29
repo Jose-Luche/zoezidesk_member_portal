@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../data/db/app_database.dart';
 import '../../../data/repositories/nutrition_repository.dart';
+import '../../../shared/widgets/app_sheet.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../nutrition_format.dart';
 
 sealed class PortionResult {
@@ -33,11 +36,8 @@ Future<PortionResult?> showPortionSheet(
   bool editing = false,
   Macros? entryMacros,
 }) =>
-    showModalBottomSheet<PortionResult>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      showDragHandle: true,
+    showAppSheet<PortionResult>(
+      context,
       builder: (_) => _PortionSheet(
         foodName: foodName,
         food: food,
@@ -122,97 +122,98 @@ class _PortionSheetState extends State<_PortionSheet> {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final p = context.palette;
     final food = widget.food;
     final m = _macros(_value ?? 0);
+    const stepper = BoxConstraints.tightFor(width: AppSizes.input, height: AppSizes.input);
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(AppSpace.md, 0, AppSpace.md, AppSpace.md + MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
+    return SheetLayout(
+      title: widget.foodName,
+      subtitle: food?.servingDescription,
+      body: [
+        LabeledField(
+          label: 'Amount (grams)',
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IconButton.outlined(
+                tooltip: 'Decrease amount',
+                onPressed: () => _change(-_step),
+                icon: const AppIcon(AppIcons.minus),
+                constraints: stepper,
+              ),
+              const SizedBox(width: AppSpace.sm),
+              Expanded(
+                child: TextField(
+                  controller: _grams,
+                  textAlign: TextAlign.center,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
+                  decoration: InputDecoration(errorText: _error),
+                ),
+              ),
+              const SizedBox(width: AppSpace.sm),
+              IconButton.outlined(
+                tooltip: 'Increase amount',
+                onPressed: () => _change(_step),
+                icon: const AppIcon(AppIcons.plus),
+                constraints: stepper,
+              ),
+            ],
+          ),
+        ),
+        if (food != null) ...[
+          const SizedBox(height: AppSpace.sm),
+          Wrap(
+            spacing: AppSpace.sm,
+            runSpacing: AppSpace.sm,
+            children: [
+              for (final n in const [1, 2])
+                ActionChip(
+                  label: Text('$n serving${n == 1 ? '' : 's'} (${formatGrams(food.defaultServingG * n)})'),
+                  onPressed: () => _grams.text = _fmt.format(food.defaultServingG * n),
+                ),
+            ],
+          ),
+        ],
+        const SizedBox(height: AppSpace.md),
+        Semantics(
+          liveRegion: true,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: 12),
+            decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(AppRadius.tile)),
+            child: Text(
+              '${formatKcal(m.calories)} · protein ${formatMacro(m.protein)} · '
+              'carbs ${formatMacro(m.carbs)} · fat ${formatMacro(m.fat)}',
+              style: text.titleSmall,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpace.lg),
+        Text('Meal', style: text.labelLarge?.copyWith(fontSize: 13, color: p.textSoft)),
+        const SizedBox(height: AppSpace.sm),
+        Wrap(
+          spacing: AppSpace.sm,
+          runSpacing: AppSpace.sm,
           children: [
-            Text(widget.foodName, style: text.titleLarge),
-            if (food?.servingDescription != null) Text(food!.servingDescription!, style: text.bodyMedium),
-            const SizedBox(height: AppSpace.md),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                IconButton.outlined(
-                  tooltip: 'Decrease amount',
-                  onPressed: () => _change(-_step),
-                  icon: const Icon(Icons.remove_rounded),
-                  constraints: const BoxConstraints.tightFor(width: AppSizes.minTouch, height: AppSizes.minTouch),
-                ),
-                const SizedBox(width: AppSpace.sm),
-                Expanded(
-                  child: TextField(
-                    controller: _grams,
-                    textAlign: TextAlign.center,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-                    decoration: InputDecoration(labelText: 'Amount (grams)', errorText: _error),
-                  ),
-                ),
-                const SizedBox(width: AppSpace.sm),
-                IconButton.outlined(
-                  tooltip: 'Increase amount',
-                  onPressed: () => _change(_step),
-                  icon: const Icon(Icons.add_rounded),
-                  constraints: const BoxConstraints.tightFor(width: AppSizes.minTouch, height: AppSizes.minTouch),
-                ),
-              ],
-            ),
-            if (food != null) ...[
-              const SizedBox(height: AppSpace.sm),
-              Wrap(
-                spacing: AppSpace.sm,
-                children: [
-                  for (final n in const [1, 2])
-                    ActionChip(
-                      label: Text('$n serving${n == 1 ? '' : 's'} (${formatGrams(food.defaultServingG * n)})'),
-                      onPressed: () => _grams.text = _fmt.format(food.defaultServingG * n),
-                    ),
-                ],
+            for (final meal in mealTypes)
+              ChoiceChip(
+                label: Text(mealLabel(meal)),
+                selected: _meal == meal,
+                onSelected: (_) => setState(() => _meal = meal),
               ),
-            ],
-            const SizedBox(height: AppSpace.md),
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                '${formatKcal(m.calories)} · protein ${formatMacro(m.protein)} · '
-                'carbs ${formatMacro(m.carbs)} · fat ${formatMacro(m.fat)}',
-                style: text.bodyMedium,
-              ),
-            ),
-            const SizedBox(height: AppSpace.md),
-            Text('Meal', style: text.titleSmall),
-            const SizedBox(height: AppSpace.xs),
-            Wrap(
-              spacing: AppSpace.sm,
-              runSpacing: AppSpace.sm,
-              children: [
-                for (final meal in mealTypes)
-                  ChoiceChip(
-                    label: Text(mealLabel(meal)),
-                    selected: _meal == meal,
-                    onSelected: (_) => setState(() => _meal = meal),
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppSpace.lg),
-            FilledButton(onPressed: _save, child: Text(widget.editing ? 'Save changes' : 'Add to diary')),
-            if (widget.editing) ...[
-              const SizedBox(height: AppSpace.sm),
-              TextButton(
-                style: TextButton.styleFrom(foregroundColor: context.palette.danger),
-                onPressed: () => Navigator.of(context).pop(const DeletePortion()),
-                child: const Text('Remove from diary'),
-              ),
-            ],
           ],
         ),
-      ),
+      ],
+      actions: [
+        FilledButton(onPressed: _save, child: Text(widget.editing ? 'Save changes' : 'Add to diary')),
+        if (widget.editing)
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(foregroundColor: p.danger),
+            onPressed: () => Navigator.of(context).pop(const DeletePortion()),
+            child: const Text('Remove from diary'),
+          ),
+      ],
     );
   }
 }

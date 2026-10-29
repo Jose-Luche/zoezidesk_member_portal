@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../data/db/app_database.dart';
 import '../../../shared/widgets/app_badge.dart';
@@ -10,14 +11,6 @@ final _time = DateFormat('h:mm a');
 
 String classTimeRange(ClassSession c) =>
     '${_time.format(c.startsAt.toLocal())} – ${_time.format(c.endsAt.toLocal())}';
-
-/// The class type's color from the gym's settings, as a thin accent only
-/// (never behind text), with the brand color as a fallback.
-Color classAccent(BuildContext context, String? hex) {
-  final digits = (hex ?? '').replaceFirst('#', '');
-  final value = digits.length == 6 ? int.tryParse(digits, radix: 16) : null;
-  return value == null ? Theme.of(context).colorScheme.primary : Color(0xFF000000 | value);
-}
 
 class ClassCard extends StatelessWidget {
   const ClassCard({
@@ -51,43 +44,38 @@ class ClassCard extends StatelessWidget {
     final c = session;
 
     final spots = !liveSpots
-        ? 'Live spots need a connection'
+        ? 'live spots need a connection'
         : c.isFull
-            ? 'Full'
+            ? 'full'
             : '${c.spotsLeft} of ${c.capacity} spots left';
+    final meta = [if (c.instructor != null) 'With ${c.instructor}', spots].join(' · ');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.sm),
-      child: Card(
+      child: Material(
+        color: p.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.md, AppSpace.md, AppSpace.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(width: AppSpace.xs, color: classAccent(context, c.color)),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpace.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(classTimeRange(c), style: text.titleSmall?.copyWith(color: p.accentText)),
-                        Text(c.className, style: text.titleMedium),
-                        if (c.instructor != null) Text('With ${c.instructor}', style: text.bodySmall),
-                        Text(spots, style: text.bodySmall),
-                        const SizedBox(height: AppSpace.sm),
-                        _StatusAndAction(
-                          view: view,
-                          error: c.localError,
-                          offline: offline,
-                          onBook: onBook,
-                          onCancel: onCancel,
-                          onDismiss: onDismiss,
-                        ),
-                      ],
-                    ),
-                  ),
+                Text(classTimeRange(c), style: text.titleSmall?.copyWith(color: p.accentText)),
+                const SizedBox(height: 2),
+                Text(c.className, style: text.titleMedium),
+                const SizedBox(height: 2),
+                Text(meta[0].toUpperCase() + meta.substring(1), style: text.bodySmall),
+                const SizedBox(height: 12),
+                _StatusAndAction(
+                  view: view,
+                  error: c.localError,
+                  offline: offline,
+                  onBook: onBook,
+                  onCancel: onCancel,
+                  onDismiss: onDismiss,
                 ),
               ],
             ),
@@ -119,14 +107,15 @@ class _StatusAndAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final waiting = offline ? 'Will be sent when you are back online.' : 'Sending…';
+    const compact = Size(0, 40);
 
-    Widget row(Widget badge, [Widget? action, String? note]) => Column(
+    Widget row(Widget? badge, [Widget? action, String? note]) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Flexible(child: badge),
+                if (badge != null) Flexible(child: badge),
+                const Spacer(),
                 if (action != null) ...[const SizedBox(width: AppSpace.sm), action],
               ],
             ),
@@ -138,33 +127,41 @@ class _StatusAndAction extends StatelessWidget {
         );
 
     return switch (view) {
-      BookingView.open => Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton(onPressed: onBook, child: const Text('Book')),
+      BookingView.open => row(
+          null,
+          FilledButton(
+            onPressed: onBook,
+            style: FilledButton.styleFrom(minimumSize: compact),
+            child: const Text('Book'),
+          ),
         ),
-      BookingView.full => row(const AppBadge(label: 'Full', tone: BadgeTone.neutral)),
-      BookingView.started => row(const AppBadge(label: 'Started', tone: BadgeTone.neutral)),
+      BookingView.full => row(const AppBadge(label: 'Full', tone: BadgeTone.neutral, icon: AppIcons.circleAlert)),
+      BookingView.started => row(const AppBadge(label: 'Started', tone: BadgeTone.neutral, icon: AppIcons.clock)),
       BookingView.booked => row(
-          const AppBadge(label: 'Booked', tone: BadgeTone.success, icon: Icons.check_circle_rounded),
-          OutlinedButton(onPressed: onCancel, child: const Text('Cancel')),
+          const AppBadge(label: 'Booked', tone: BadgeTone.success, icon: AppIcons.circleCheck),
+          OutlinedButton(
+            onPressed: onCancel,
+            style: OutlinedButton.styleFrom(minimumSize: compact),
+            child: const Text('Cancel'),
+          ),
         ),
       BookingView.bookPending => row(
-          const AppBadge(label: 'Booking pending', tone: BadgeTone.neutral, icon: Icons.schedule_rounded),
+          const AppBadge(label: 'Booking pending', tone: BadgeTone.neutral, icon: AppIcons.clock),
           TextButton(onPressed: onCancel, child: const Text('Undo')),
           waiting,
         ),
       BookingView.cancelPending => row(
-          const AppBadge(label: 'Cancelling', tone: BadgeTone.neutral, icon: Icons.schedule_rounded),
+          const AppBadge(label: 'Cancelling', tone: BadgeTone.neutral, icon: AppIcons.clock),
           TextButton(onPressed: onBook, child: const Text('Keep booking')),
           waiting,
         ),
       BookingView.bookFailed => row(
-          const AppBadge(label: 'Booking failed', tone: BadgeTone.danger, icon: Icons.error_outline_rounded),
+          const AppBadge(label: 'Booking failed', tone: BadgeTone.danger, icon: AppIcons.circleAlert),
           TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
           error,
         ),
       BookingView.cancelFailed => row(
-          const AppBadge(label: 'Cancel failed', tone: BadgeTone.danger, icon: Icons.error_outline_rounded),
+          const AppBadge(label: 'Cancel failed', tone: BadgeTone.danger, icon: AppIcons.circleAlert),
           TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
           error,
         ),

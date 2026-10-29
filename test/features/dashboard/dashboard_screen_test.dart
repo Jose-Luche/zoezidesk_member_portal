@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zoezidesk_member/features/dashboard/widgets/dashboard_sections.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:zoezidesk_member/app.dart';
@@ -163,7 +164,7 @@ void main() {
     await pumpApp(tester);
 
     when(() => env.paymentsApi.page(any())).thenAnswer((_) async => paymentsJson([]));
-    final payments = find.descendant(of: find.byType(Card), matching: find.text('Payments'));
+    final payments = find.descendant(of: find.byType(QuickActionTile), matching: find.text('Payments'));
     await tester.scrollUntilVisible(payments, 200, scrollable: find.byType(Scrollable).first);
     await tester.ensureVisible(payments);
     await tester.pumpAndSettle();

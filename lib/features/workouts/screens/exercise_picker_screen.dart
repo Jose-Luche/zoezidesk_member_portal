@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../data/db/app_database.dart';
 import '../../../data/sync/sync.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../state/workouts_providers.dart';
 import '../widgets/exercise_detail_sheet.dart';
 import '../workout_format.dart';
@@ -65,28 +68,28 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
     final groups = _group == null ? null : exerciseGroupsFor(_group!);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_picking ? 'Add exercise' : 'Exercise library')),
+      appBar: AppTopBar(title: _picking ? 'Add exercise' : 'Exercise library'),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.sm, AppSpace.md, 0),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
             child: TextField(
               controller: _search,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search_rounded),
+                prefixIcon: const FieldIcon(AppIcons.search),
                 hintText: 'Search exercises',
                 suffixIcon: query.isEmpty
                     ? null
-                    : IconButton(tooltip: 'Clear', onPressed: _search.clear, icon: const Icon(Icons.close_rounded)),
+                    : IconButton(tooltip: 'Clear', onPressed: _search.clear, icon: const AppIcon(AppIcons.x)),
               ),
             ),
           ),
           SizedBox(
-            height: AppSizes.minTouch + AppSpace.md,
+            height: AppSizes.minTouch + AppSpace.lg,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter, vertical: 12),
               children: [
                 _GroupChip(label: 'All', selected: _group == null, onTap: () => setState(() => _group = null)),
                 for (final (value, label) in muscleGroups)
@@ -104,7 +107,7 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
                       onAction: ref.read(libraryRefreshProvider.notifier).refresh,
                     )
                   : const StateMessage(
-                      icon: Icons.fitness_center_rounded,
+                      icon: AppIcons.dumbbell,
                       title: 'No exercises yet',
                       message: 'Your gym has not added exercises.',
                     ),
@@ -125,31 +128,36 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
   Widget _list(List<LibraryExercise> rows) {
     if (rows.isEmpty) {
       return const StateMessage(
-        icon: Icons.search_off_rounded,
+        icon: AppIcons.searchX,
         title: 'No matches',
         message: 'Try another name or muscle group.',
       );
     }
     final text = Theme.of(context).textTheme;
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(AppSpace.md, 0, AppSpace.md, AppSpace.lg),
+      padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.xs, AppSpace.gutter, AppSpace.lg),
       itemCount: rows.length,
       itemBuilder: (_, i) {
         final e = rows[i];
         final subtitle = [muscleLabel(e.muscleGroup), ...equipmentOf(e)].join(' · ');
-        return Card(
-          margin: const EdgeInsets.only(bottom: AppSpace.sm),
-          child: ListTile(
-            title: Text(e.name, style: text.titleSmall),
-            subtitle: Text(subtitle, style: text.bodySmall),
-            onTap: () => _picking ? _pick(e) : showExerciseDetail(context, e),
-            trailing: _picking
-                ? IconButton(
-                    tooltip: 'How to do it',
-                    icon: const Icon(Icons.info_outline_rounded),
-                    onPressed: () => showExerciseDetail(context, e),
-                  )
-                : const Icon(Icons.chevron_right_rounded),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpace.sm),
+          child: SurfaceCard.tile(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: ListRow(
+              icon: _picking ? AppIcons.plus : AppIcons.dumbbell,
+              title: e.name,
+              titleStyle: text.titleSmall,
+              subtitle: subtitle,
+              onTap: () => _picking ? _pick(e) : showExerciseDetail(context, e),
+              trailing: _picking
+                  ? IconButton(
+                      tooltip: 'How to do it',
+                      icon: AppIcon(AppIcons.info, color: context.palette.accentText),
+                      onPressed: () => showExerciseDetail(context, e),
+                    )
+                  : null,
+            ),
           ),
         );
       },

@@ -4,13 +4,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../data/dto/builder_dto.dart';
 import '../../../data/sync/sync.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_sheet.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../state/builder_providers.dart';
 
 /// The generated workout: review, swap, remove, reorder, save as a template
@@ -70,7 +74,7 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
 
     if (workout == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Your workout')),
+        appBar: const AppTopBar(title: 'Your workout'),
         body: StateMessage.empty(
           title: 'No workout yet',
           message: 'Build one with the workout builder.',
@@ -86,19 +90,19 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
     final editor = ref.read(workoutEditorProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: Text(workout.templateName ?? 'Your workout')),
+      appBar: AppTopBar(title: workout.templateName ?? 'Your workout'),
       body: CustomScrollView(
         controller: _scroll,
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.all(AppSpace.md),
+            padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, 0),
             sliver: SliverList.list(children: [
               _Summary(workout: workout),
               if (locked) ...[
                 const SizedBox(height: AppSpace.md),
                 InfoBanner(
                   tone: BadgeTone.success,
-                  icon: Icons.play_circle_rounded,
+                  icon: AppIcons.circlePlay,
                   message: 'Workout started. Log your sets as you go.',
                   actionLabel: workout.sessionId == null ? null : 'Open workout',
                   onAction: workout.sessionId == null ? null : () => _open(workout.sessionId!),
@@ -114,7 +118,7 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
             ]),
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
             sliver: SliverList.builder(
               itemCount: workout.exercises.length,
               itemBuilder: (context, i) => _ExerciseCard(
@@ -131,20 +135,21 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
           ),
           if (!locked)
             SliverPadding(
-              padding: const EdgeInsets.all(AppSpace.md),
+              padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.md, AppSpace.gutter, AppSpace.lg),
               sliver: SliverList.list(children: [
                 FilledButton.icon(
+                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(AppSizes.sheetButton)),
                   onPressed: busy || workout.exercises.isEmpty ? null : () => _start(workout),
-                  icon: const Icon(Icons.play_arrow_rounded),
+                  icon: const AppIcon(AppIcons.play),
                   label: const Text('Start workout'),
                 ),
                 const SizedBox(height: AppSpace.sm),
                 OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(AppSizes.sheetButton)),
                   onPressed: busy ? null : () => _showSaveTemplate(workout),
-                  icon: const Icon(Icons.bookmark_add_rounded),
+                  icon: const AppIcon(AppIcons.bookmarkPlus),
                   label: Text(workout.status == 'saved_template' ? 'Rename template' : 'Save as template'),
                 ),
-                const SizedBox(height: AppSpace.lg),
               ]),
             ),
         ],
@@ -153,9 +158,8 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
   }
 
   Future<void> _showSwap(GuidedWorkout workout, GuidedExercise exercise) async {
-    final chosen = await showModalBottomSheet<ExerciseAlternative>(
-      context: context,
-      isScrollControlled: true,
+    final chosen = await showAppSheet<ExerciseAlternative>(
+      context,
       builder: (_) => _SwapSheet(workout: workout, exercise: exercise),
     );
     if (chosen != null) {
@@ -164,9 +168,8 @@ class _WorkoutResultScreenState extends ConsumerState<WorkoutResultScreen> {
   }
 
   Future<void> _showSaveTemplate(GuidedWorkout workout) async {
-    final name = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
+    final name = await showAppSheet<String>(
+      context,
       builder: (_) => _TemplateSheet(initial: workout.templateName),
     );
     if (name == null) return;
@@ -186,37 +189,34 @@ class _Summary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpace.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: AppSpace.sm,
-              runSpacing: AppSpace.sm,
-              children: [
+    return SurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpace.sm,
+            runSpacing: AppSpace.sm,
+            children: [
+              AppBadge(
+                label: '${workout.exercises.length} exercises',
+                tone: BadgeTone.neutral,
+                icon: AppIcons.dumbbell,
+              ),
+              if (workout.estimatedDurationMinutes != null)
                 AppBadge(
-                  label: '${workout.exercises.length} exercises',
+                  label: '~${workout.estimatedDurationMinutes} min',
                   tone: BadgeTone.neutral,
-                  icon: Icons.fitness_center_rounded,
+                  icon: AppIcons.timer,
                 ),
-                if (workout.estimatedDurationMinutes != null)
-                  AppBadge(
-                    label: '~${workout.estimatedDurationMinutes} min',
-                    tone: BadgeTone.neutral,
-                    icon: Icons.timer_rounded,
-                  ),
-                if (workout.status == 'saved_template')
-                  const AppBadge(label: 'Template', icon: Icons.bookmark_rounded),
-              ],
-            ),
-            if (workout.explanation != null) ...[
-              const SizedBox(height: AppSpace.md),
-              Text(workout.explanation!, style: text.bodyMedium),
+              if (workout.status == 'saved_template')
+                const AppBadge(label: 'Template', icon: AppIcons.bookmark),
             ],
+          ),
+          if (workout.explanation != null) ...[
+            const SizedBox(height: 12),
+            Text(workout.explanation!, style: text.bodyMedium),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -258,7 +258,6 @@ class _ExerciseCardState extends State<_ExerciseCard> {
     final e = widget.exercise;
     final text = Theme.of(context).textTheme;
     final p = context.palette;
-    final scheme = Theme.of(context).colorScheme;
 
     final weight = e.targetWeightKg == null || e.targetWeightKg == 0
         ? null
@@ -272,30 +271,30 @@ class _ExerciseCardState extends State<_ExerciseCard> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.sm),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.md, AppSpace.sm, AppSpace.xs),
-          child: Column(
+      child: SurfaceCard(
+        padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.md, AppSpace.sm, AppSpace.xs),
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: AppSpace.md,
-                    backgroundColor: scheme.primary,
-                    foregroundColor: scheme.onPrimary,
-                    child: Text('${widget.index + 1}', style: text.labelLarge?.copyWith(color: scheme.onPrimary)),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: p.accentTint, shape: BoxShape.circle),
+                    child: Text('${widget.index + 1}', style: text.titleMedium?.copyWith(color: p.accentText)),
                   ),
-                  const SizedBox(width: AppSpace.md),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(e.name, style: text.titleMedium),
                         if (meta.isNotEmpty) Text(meta, style: text.bodySmall),
-                        const SizedBox(height: AppSpace.xs),
-                        Text(targets, style: text.bodyLarge),
+                        const SizedBox(height: 6),
+                        Text(targets, style: text.titleSmall?.copyWith(color: p.accentText)),
                         if (e.suggestedWeightProgression != null)
                           Text('Next time: ${e.suggestedWeightProgression}', style: text.bodySmall),
                         if (e.plateau) ...[
@@ -303,7 +302,7 @@ class _ExerciseCardState extends State<_ExerciseCard> {
                           const AppBadge(
                             label: 'Plateau: consider a swap',
                             tone: BadgeTone.warning,
-                            icon: Icons.trending_flat_rounded,
+                            icon: AppIcons.moveRight,
                           ),
                         ],
                         if (e.reason != null) ...[
@@ -317,7 +316,7 @@ class _ExerciseCardState extends State<_ExerciseCard> {
               ),
               if (_showHow && e.instructions != null)
                 Padding(
-                  padding: const EdgeInsets.only(top: AppSpace.sm, right: AppSpace.sm),
+                  padding: const EdgeInsets.only(top: 12, right: AppSpace.sm, left: 48),
                   child: Text(e.instructions!, style: text.bodyMedium),
                 ),
               Row(
@@ -331,28 +330,27 @@ class _ExerciseCardState extends State<_ExerciseCard> {
                   IconButton(
                     tooltip: 'Move up',
                     onPressed: widget.enabled && widget.index > 0 ? widget.onUp : null,
-                    icon: const Icon(Icons.arrow_upward_rounded),
+                    icon: const AppIcon(AppIcons.arrowUp, size: AppSizes.iconRow),
                   ),
                   IconButton(
                     tooltip: 'Move down',
                     onPressed: widget.enabled && widget.index < widget.count - 1 ? widget.onDown : null,
-                    icon: const Icon(Icons.arrow_downward_rounded),
+                    icon: const AppIcon(AppIcons.arrowDown, size: AppSizes.iconRow),
                   ),
                   IconButton(
                     tooltip: 'Swap exercise',
                     onPressed: widget.enabled ? widget.onSwap : null,
-                    icon: const Icon(Icons.swap_horiz_rounded),
+                    icon: const AppIcon(AppIcons.arrowLeftRight, size: AppSizes.iconRow),
                   ),
                   IconButton(
                     tooltip: 'Remove exercise',
                     onPressed: widget.enabled ? widget.onRemove : null,
-                    icon: const Icon(Icons.delete_outline_rounded),
+                    icon: const AppIcon(AppIcons.trash2, size: AppSizes.iconRow),
                   ),
                 ],
               ),
             ],
           ),
-        ),
       ),
     );
   }
@@ -377,37 +375,43 @@ class _SwapSheet extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpace.md, 0, AppSpace.md, AppSpace.sm),
-              child: Text('Swap ${exercise.name}', style: text.headlineSmall),
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
+              child: Semantics(
+                header: true,
+                child: Text('Swap ${exercise.name}', style: text.headlineSmall?.copyWith(fontSize: 24)),
+              ),
             ),
             Flexible(
               child: switch (alternatives) {
-                AsyncData(:final value) when value.isEmpty => const Padding(
-                    padding: EdgeInsets.all(AppSpace.lg),
-                    child: Text('No alternatives match your answers.'),
+                AsyncData(:final value) when value.isEmpty => Padding(
+                    padding: const EdgeInsets.fromLTRB(22, AppSpace.sm, 22, AppSpace.xl),
+                    child: Text('No alternatives match your answers.', style: text.bodyLarge),
                   ),
-                AsyncData(:final value) => ListView.builder(
+                AsyncData(:final value) => ListView.separated(
                     shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(AppSpace.md, 0, AppSpace.md, AppSpace.lg),
                     itemCount: value.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: AppSpace.sm),
                     itemBuilder: (_, i) {
                       final a = value[i];
-                      return ListTile(
-                        leading: const Icon(Icons.fitness_center_rounded),
-                        title: Text(a.name),
-                        subtitle: Text(
-                          [a.difficulty, ...a.equipment]
+                      return SurfaceCard.tile(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: ListRow(
+                          icon: AppIcons.dumbbell,
+                          title: a.name,
+                          titleStyle: text.titleSmall,
+                          subtitle: [a.difficulty, ...a.equipment]
                               .whereType<String>()
                               .where((s) => s.isNotEmpty)
                               .map((s) => s[0].toUpperCase() + s.substring(1))
                               .join(' · '),
-                          style: text.bodySmall,
+                          onTap: () => Navigator.pop(context, a),
                         ),
-                        onTap: () => Navigator.pop(context, a),
                       );
                     },
                   ),
                 AsyncError(:final error) => StateMessage(
-                    icon: error is NetworkFailure ? Icons.cloud_off_rounded : Icons.error_outline_rounded,
+                    icon: error is NetworkFailure ? AppIcons.cloudOff : AppIcons.circleAlert,
                     title: error is NetworkFailure ? 'You are offline' : 'Could not load alternatives',
                     message: 'Swapping needs an internet connection.',
                     actionLabel: 'Try again',
@@ -444,39 +448,31 @@ class _TemplateSheetState extends State<_TemplateSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpace.md,
-        0,
-        AppSpace.md,
-        AppSpace.lg + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Save as template', style: text.headlineSmall),
-            const SizedBox(height: AppSpace.md),
-            TextFormField(
+    return Form(
+      key: _formKey,
+      child: SheetLayout(
+        title: 'Save as template',
+        body: [
+          LabeledField(
+            label: 'Template name',
+            child: TextFormField(
               controller: _name,
               autofocus: true,
               maxLength: 255,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Template name', hintText: 'Push day'),
+              decoration: const InputDecoration(hintText: 'Push day'),
               validator: (v) => v == null || v.trim().isEmpty ? 'Give the template a name.' : null,
             ),
-            const SizedBox(height: AppSpace.md),
-            FilledButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) Navigator.pop(context, _name.text.trim());
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
+          ),
+        ],
+        actions: [
+          FilledButton(
+            onPressed: () {
+              if (_formKey.currentState!.validate()) Navigator.pop(context, _name.text.trim());
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

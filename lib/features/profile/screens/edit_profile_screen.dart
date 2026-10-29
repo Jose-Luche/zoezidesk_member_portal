@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../auth/widgets/auth_scaffold.dart';
 import '../state/edit_profile_controller.dart';
 import '../state/profile_providers.dart';
@@ -94,7 +97,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     if (profile == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Edit profile')),
+        appBar: const AppTopBar(title: 'Edit profile'),
         body: StateMessage.offline(
           title: 'Profile not loaded',
           message: 'Open your profile with an internet connection first.',
@@ -108,53 +111,55 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final dob = DateTime.tryParse(_dateOfBirth ?? '');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit profile')),
+      appBar: const AppTopBar(title: 'Edit profile'),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(AppSpace.md),
+          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.lg),
           children: [
-            InfoBanner(
+            const InfoBanner(
               message: 'Name, phone number and photo can only be changed at the front desk.',
-              icon: Icons.storefront_rounded,
+              icon: AppIcons.store,
             ),
             const SizedBox(height: AppSpace.lg),
-            Text('Contact', style: text.titleLarge),
-            const SizedBox(height: AppSpace.sm),
-            TextFormField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: const [AutofillHints.email],
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                prefixIcon: const Icon(Icons.mail_rounded),
-                errorText: fieldErrors['email'],
-              ),
-              validator: (v) => v != null && v.trim().isNotEmpty && !_emailPattern.hasMatch(v.trim())
-                  ? 'Enter a valid email address.'
-                  : null,
-            ),
-            const SizedBox(height: AppSpace.lg),
-            Text('Personal', style: text.titleLarge),
-            const SizedBox(height: AppSpace.sm),
-            // A field-styled button so the label stays visible like the inputs.
-            InkWell(
-              onTap: _pickDate,
-              borderRadius: BorderRadius.circular(AppRadius.control),
-              child: InputDecorator(
+            const SectionHeader('Contact'),
+            LabeledField(
+              label: 'Email',
+              child: TextFormField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
-                  labelText: 'Date of birth',
-                  prefixIcon: const Icon(Icons.cake_rounded),
-                  suffixIcon: const Icon(Icons.calendar_month_rounded),
-                  errorText: fieldErrors['date_of_birth'],
+                  prefixIcon: const FieldIcon(AppIcons.mail),
+                  errorText: fieldErrors['email'],
                 ),
-                child: Text(dob == null ? 'Not set' : formatDate(dob), style: text.bodyLarge),
+                validator: (v) => v != null && v.trim().isNotEmpty && !_emailPattern.hasMatch(v.trim())
+                    ? 'Enter a valid email address.'
+                    : null,
+              ),
+            ),
+            const SizedBox(height: AppSpace.lg),
+            const SectionHeader('Personal'),
+            LabeledField(
+              label: 'Date of birth',
+              child: PickerField(
+                onTap: _pickDate,
+                icon: AppIcons.cake,
+                trailingIcon: AppIcons.calendar,
+                errorText: fieldErrors['date_of_birth'],
+                value: dob == null ? 'Not set' : formatDate(dob),
               ),
             ),
             const SizedBox(height: AppSpace.md),
-            Text('Gender', style: text.bodySmall),
-            const SizedBox(height: AppSpace.sm),
+            Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: Text(
+                'Gender',
+                style: text.labelLarge?.copyWith(fontSize: 13, height: 1.3, color: context.palette.textSoft),
+              ),
+            ),
+            const SizedBox(height: 6),
             Wrap(
               spacing: AppSpace.sm,
               runSpacing: AppSpace.sm,
@@ -176,38 +181,41 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               FormErrorText(fieldErrors['gender']!),
             ],
             const SizedBox(height: AppSpace.lg),
-            Text('Emergency contact', style: text.titleLarge),
-            const SizedBox(height: AppSpace.sm),
-            TextFormField(
-              controller: _emergencyName,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                prefixIcon: const Icon(Icons.contact_emergency_rounded),
-                errorText: fieldErrors['emergency_contact_name'],
+            const SectionHeader('Emergency contact'),
+            LabeledField(
+              label: 'Name',
+              child: TextFormField(
+                controller: _emergencyName,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  prefixIcon: const FieldIcon(AppIcons.contact),
+                  errorText: fieldErrors['emergency_contact_name'],
+                ),
               ),
             ),
             const SizedBox(height: AppSpace.md),
-            TextFormField(
-              controller: _emergencyPhone,
-              keyboardType: TextInputType.phone,
-              textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                labelText: 'Phone',
-                hintText: '0712 345 678',
-                prefixIcon: const Icon(Icons.phone_in_talk_rounded),
-                errorText: fieldErrors['emergency_contact_phone'],
+            LabeledField(
+              label: 'Phone',
+              child: TextFormField(
+                controller: _emergencyPhone,
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  hintText: '0712 345 678',
+                  prefixIcon: const FieldIcon(AppIcons.phoneCall),
+                  errorText: fieldErrors['emergency_contact_phone'],
+                ),
+                validator: (v) => v != null && v.trim().isNotEmpty && !_phonePattern.hasMatch(v.trim())
+                    ? 'Enter a valid phone number.'
+                    : null,
               ),
-              validator: (v) => v != null && v.trim().isNotEmpty && !_phonePattern.hasMatch(v.trim())
-                  ? 'Enter a valid phone number.'
-                  : null,
             ),
             if (error is AppFailure && error is! ValidationFailure) ...[
               const SizedBox(height: AppSpace.lg),
               InfoBanner(
                 tone: BadgeTone.danger,
-                icon: error is NetworkFailure ? Icons.cloud_off_rounded : null,
+                icon: error is NetworkFailure ? AppIcons.cloudOff : null,
                 message: error is NetworkFailure
                     ? 'You are offline. Connect to the internet to save your changes.'
                     : error.message,
@@ -215,10 +223,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ],
             const SizedBox(height: AppSpace.lg),
             FilledButton(
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(AppSizes.sheetButton)),
               onPressed: save.isLoading ? null : _save,
               child: Text(save.isLoading ? 'Saving…' : 'Save changes'),
             ),
-            const SizedBox(height: AppSpace.lg),
           ],
         ),
       ),

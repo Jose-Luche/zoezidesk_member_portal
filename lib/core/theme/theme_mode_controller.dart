@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../storage/device_preferences.dart';
 
 /// The saved choice, read before the first frame (see main.dart) so the app
-/// never flashes the wrong theme. Dark is the default.
-final initialThemeModeProvider = Provider<ThemeMode>((_) => ThemeMode.dark);
+/// never flashes the wrong theme. Light is the default.
+final initialThemeModeProvider = Provider<ThemeMode>((_) => ThemeMode.light);
 
-/// App-wide theme choice: dark, light, or match the phone.
+/// App-wide theme choice: light, dark, or match the phone.
 class ThemeModeController extends Notifier<ThemeMode> {
   @override
   ThemeMode build() => ref.watch(initialThemeModeProvider);

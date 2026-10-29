@@ -24,18 +24,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('starts in dark theme and toggles to light', (tester) async {
+  testWidgets('starts in light theme and toggles to dark', (tester) async {
     await pumpGallery(tester);
     BuildContext ctx() => tester.element(find.text('Design system'));
 
-    expect(Theme.of(ctx()).brightness, Brightness.dark);
-    expect(ctx().palette.background, AppColors.darkBackground);
+    expect(Theme.of(ctx()).brightness, Brightness.light);
+    expect(ctx().palette.background, AppColors.cream);
 
-    await tester.tap(find.byTooltip('Switch to light theme'));
+    await tester.tap(find.byTooltip('Switch to dark theme'));
     await tester.pumpAndSettle();
 
-    expect(Theme.of(ctx()).brightness, Brightness.light);
-    expect(ctx().palette.background, AppColors.lightBackground);
+    expect(Theme.of(ctx()).brightness, Brightness.dark);
+    expect(ctx().palette.background, AppColors.neutral900);
   });
 
   testWidgets('primary button meets the 48dp touch target', (tester) async {

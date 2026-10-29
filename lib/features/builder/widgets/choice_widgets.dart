@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../shared/widgets/surfaces.dart';
 
 /// Single-choice option as a full-width card (energy, goal, experience).
 class ChoiceCard extends StatelessWidget {
@@ -15,14 +17,13 @@ class ChoiceCard extends StatelessWidget {
 
   final String label;
   final String? description;
-  final IconData? icon;
+  final LucideIcon? icon;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.sm),
@@ -30,35 +31,35 @@ class ChoiceCard extends StatelessWidget {
         selected: selected,
         inMutuallyExclusiveGroup: true,
         button: true,
-        child: Material(
-          color: selected ? Color.alphaBlend(p.accentTint, p.surface) : p.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            side: BorderSide(color: selected ? scheme.primary : p.border, width: selected ? 2 : 1),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
+        child: SelectableSurface(
+          selected: selected,
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 64),
             child: Padding(
-              padding: const EdgeInsets.all(AppSpace.md),
+              padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 14, AppSpace.gutter, 14),
               child: Row(
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, color: p.accentText),
-                    const SizedBox(width: AppSpace.md),
+                    AppIcon(icon!, color: p.accentText),
+                    const SizedBox(width: 14),
                   ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(label, style: text.titleMedium),
-                        if (description != null)
+                        if (description != null) ...[
+                          const SizedBox(height: 2),
                           Text(description!, style: text.bodySmall),
+                        ],
                       ],
                     ),
                   ),
-                  Icon(
-                    selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                  const SizedBox(width: AppSpace.sm),
+                  AppIcon(
+                    selected ? AppIcons.circleDot : AppIcons.circle,
+                    size: AppSizes.iconRow,
                     color: selected ? p.accentText : p.textMuted,
                   ),
                 ],

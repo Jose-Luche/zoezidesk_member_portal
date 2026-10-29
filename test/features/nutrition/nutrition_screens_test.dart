@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zoezidesk_member/shared/widgets/surfaces.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:zoezidesk_member/app.dart';
 import 'package:zoezidesk_member/core/router/app_router.dart';
@@ -44,6 +45,20 @@ void main() {
     return c;
   }
 
+  // Labels sit above the fields (LabeledField), not inside them.
+  Finder labeled(String label) => find.descendant(
+        of: find.widgetWithText(LabeledField, label),
+        matching: find.byType(TextField),
+      );
+
+  Future<void> reveal(WidgetTester tester, Finder f) async {
+    if (f.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(f, 200, scrollable: find.byType(Scrollable).first);
+    }
+    await tester.ensureVisible(f.first);
+    await tester.pumpAndSettle();
+  }
+
   Future<void> tapText(WidgetTester tester, String text) async {
     final f = find.text(text);
     if (f.evaluate().isEmpty) {
@@ -74,6 +89,7 @@ void main() {
     await tester.tap(find.text('Add to diary'));
     await settle(tester);
 
+    await reveal(tester, find.text('Ugali'));
     expect(find.text('Ugali'), findsOneWidget);
     expect(find.text('250 g · 900 kcal'), findsOneWidget);
     expect(find.text('Not sent yet'), findsOneWidget);
@@ -102,7 +118,7 @@ void main() {
     expect(find.text('250 g · 900 kcal'), findsOneWidget);
 
     await tapText(tester, 'Ugali');
-    await tester.enterText(find.widgetWithText(TextField, 'Amount (grams)'), '100');
+    await tester.enterText(labeled('Amount (grams)'), '100');
     await tester.pump();
     await tester.tap(find.text('Save changes'));
     await settle(tester);
@@ -125,7 +141,7 @@ void main() {
 
   nutritionTest('earlier days, but not the future', (tester) async {
     await open(tester);
-    final next = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.chevron_right_rounded));
+    final next = tester.widget<IconButton>(find.ancestor(of: find.byTooltip('Next day'), matching: find.byType(IconButton)).first);
     expect(next.onPressed, isNull);
 
     await tester.tap(find.byTooltip('Previous day'));
@@ -152,8 +168,9 @@ void main() {
     await open(tester, Routes.nutritionGoal);
 
     await tapText(tester, 'Fat Loss');
+    await reveal(tester, labeled('Calories (kcal)'));
     expect(find.widgetWithText(TextField, '2000'), findsOneWidget);
-    await tester.enterText(find.widgetWithText(TextField, 'Calories (kcal)'), '1900');
+    await tester.enterText(labeled('Calories (kcal)'), '1900');
     await tapText(tester, 'Save daily goal');
 
     verify(() => env.nutritionApi.setGoal({'goal_type': 'fat_loss', 'calories': 1900, 'protein': 150.0, 'carbs': 200.0, 'fat': 67.0}))
@@ -165,11 +182,13 @@ void main() {
     when(() => env.nutritionApi.setGoal(any())).thenThrow(offline());
     await open(tester, Routes.nutritionGoal);
 
-    await tester.enterText(find.widgetWithText(TextField, 'Calories (kcal)'), '900');
+    await reveal(tester, labeled('Calories (kcal)'));
+    await tester.enterText(labeled('Calories (kcal)'), '900');
     await tapText(tester, 'Save daily goal');
     expect(find.text('Daily calories should be at least 1,200.'), findsOneWidget);
 
-    await tester.enterText(find.widgetWithText(TextField, 'Calories (kcal)'), '2100');
+    await reveal(tester, labeled('Calories (kcal)'));
+    await tester.enterText(labeled('Calories (kcal)'), '2100');
     await tapText(tester, 'Save daily goal');
     expect(find.text('You are offline. Saving your goal needs an internet connection.'), findsOneWidget);
   });

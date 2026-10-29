@@ -1,37 +1,39 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/dto/dashboard_dto.dart';
 import '../../../shared/widgets/skeleton.dart';
+import '../../../shared/widgets/surfaces.dart';
 
+/// Icon in the accent, the value in Caprasimo and a muted label. Three sit
+/// in a row.
 class StatTile extends StatelessWidget {
   const StatTile({super.key, required this.label, required this.value, required this.icon});
 
   final String label;
   final String value;
-  final IconData icon;
+  final LucideIcon icon;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpace.md),
-        child: MergeSemantics(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: context.palette.accentText),
-              const SizedBox(height: AppSpace.sm),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(value, style: text.headlineSmall),
-              ),
-              Text(label, style: text.bodySmall, maxLines: 2),
-            ],
-          ),
+    return SurfaceCard.tile(
+      child: MergeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppIcon(icon, size: AppSizes.iconRow, color: context.palette.accentText),
+            const SizedBox(height: 10),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(value, style: text.headlineSmall?.copyWith(fontSize: 22)),
+            ),
+            const SizedBox(height: 2),
+            Text(label, style: text.bodySmall, maxLines: 2),
+          ],
         ),
       ),
     );
@@ -42,11 +44,11 @@ class QuickAction {
   const QuickAction({required this.label, required this.icon, required this.onTap});
 
   final String label;
-  final IconData icon;
+  final LucideIcon icon;
   final VoidCallback onTap;
 }
 
-/// Two-column grid of large touch targets.
+/// Two-per-row pill tiles, 58 tall.
 class QuickActionsGrid extends StatelessWidget {
   const QuickActionsGrid({super.key, required this.actions});
 
@@ -59,10 +61,10 @@ class QuickActionsGrid extends StatelessWidget {
       if (i > 0) rows.add(const SizedBox(height: AppSpace.sm));
       rows.add(Row(
         children: [
-          Expanded(child: _ActionTile(actions[i])),
+          Expanded(child: QuickActionTile(actions[i])),
           const SizedBox(width: AppSpace.sm),
           Expanded(
-            child: i + 1 < actions.length ? _ActionTile(actions[i + 1]) : const SizedBox.shrink(),
+            child: i + 1 < actions.length ? QuickActionTile(actions[i + 1]) : const SizedBox.shrink(),
           ),
         ],
       ));
@@ -71,27 +73,32 @@ class QuickActionsGrid extends StatelessWidget {
   }
 }
 
-class _ActionTile extends StatelessWidget {
-  const _ActionTile(this.action);
+class QuickActionTile extends StatelessWidget {
+  const QuickActionTile(this.action, {super.key});
 
   final QuickAction action;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final p = context.palette;
+    return Material(
+      color: p.surface,
+      shape: const StadiumBorder(),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: action.onTap,
+        customBorder: const StadiumBorder(),
+        hoverColor: p.accentTint,
+        highlightColor: p.accentSoft,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: AppSpace.xxxl),
+          constraints: const BoxConstraints(minHeight: AppSizes.quickAction),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter, vertical: AppSpace.sm),
             child: Row(
               children: [
-                Icon(action.icon, color: context.palette.accentText),
-                const SizedBox(width: AppSpace.sm),
-                Expanded(
-                  child: Text(action.label, style: Theme.of(context).textTheme.titleSmall),
-                ),
+                AppIcon(action.icon, size: AppSizes.iconRow, color: p.accentText),
+                const SizedBox(width: 10),
+                Expanded(child: Text(action.label, style: Theme.of(context).textTheme.titleSmall)),
               ],
             ),
           ),
@@ -110,32 +117,15 @@ class RecentPaymentsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: AppSpace.md, right: AppSpace.sm),
-              child: Row(
-                children: [
-                  Expanded(child: Text('Recent payments', style: text.titleLarge)),
-                  if (onSeeAll != null)
-                    TextButton(onPressed: onSeeAll, child: const Text('See all')),
-                ],
-              ),
-            ),
-            if (payments.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(AppSpace.md),
-                child: Text('No payments yet.', style: text.bodySmall),
-              )
-            else
-              for (final payment in payments) _PaymentRow(payment),
-          ],
-        ),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionHeader('Recent payments', actionLabel: 'See all', onAction: onSeeAll),
+        if (payments.isEmpty)
+          Text('No payments yet.', style: text.bodySmall)
+        else
+          ListCard(children: [for (final payment in payments) _PaymentRow(payment)]),
+      ],
     );
   }
 }
@@ -160,12 +150,12 @@ class _PaymentRow extends StatelessWidget {
       payment.receipt ?? method,
     ].where((s) => s.isNotEmpty).join(' · ');
 
-    return ListTile(
-      leading: Icon(
-        payment.method == 'mpesa' ? Icons.phone_android_rounded : Icons.payments_rounded,
-      ),
-      title: Text(payment.plan ?? 'Membership', style: text.titleSmall),
-      subtitle: Text(detail, style: text.bodySmall),
+    return ListRow(
+      icon: payment.method == 'mpesa' ? AppIcons.smartphone : AppIcons.banknote,
+      iconColor: context.palette.rowIcon,
+      title: payment.plan ?? 'Membership',
+      titleStyle: text.titleSmall,
+      subtitle: detail,
       trailing: Text(formatKes(payment.amount), style: text.titleSmall),
     );
   }
@@ -181,20 +171,30 @@ class DashboardSkeleton extends StatelessWidget {
       label: 'Loading dashboard',
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(AppSpace.md),
+        padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.md),
         children: const [
-          SkeletonBox(height: 220, radius: AppRadius.card),
+          SkeletonBox(width: 120, height: 12),
+          SizedBox(height: AppSpace.md),
+          SkeletonBox(height: 220, radius: AppRadius.hero),
           SizedBox(height: AppSpace.md),
           Row(
             children: [
-              Expanded(child: SkeletonBox(height: 104, radius: AppRadius.card)),
+              Expanded(child: SkeletonBox(height: 104, radius: AppRadius.tile)),
               SizedBox(width: AppSpace.sm),
-              Expanded(child: SkeletonBox(height: 104, radius: AppRadius.card)),
+              Expanded(child: SkeletonBox(height: 104, radius: AppRadius.tile)),
               SizedBox(width: AppSpace.sm),
-              Expanded(child: SkeletonBox(height: 104, radius: AppRadius.card)),
+              Expanded(child: SkeletonBox(height: 104, radius: AppRadius.tile)),
             ],
           ),
-          SizedBox(height: AppSpace.md),
+          SizedBox(height: AppSpace.lg),
+          Row(
+            children: [
+              Expanded(child: SkeletonBox(height: AppSizes.quickAction)),
+              SizedBox(width: AppSpace.sm),
+              Expanded(child: SkeletonBox(height: AppSizes.quickAction)),
+            ],
+          ),
+          SizedBox(height: AppSpace.lg),
           SkeletonListTile(),
           SizedBox(height: AppSpace.sm),
           SkeletonListTile(),

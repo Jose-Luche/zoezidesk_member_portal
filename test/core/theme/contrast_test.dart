@@ -28,20 +28,14 @@ void main() {
 
   for (final (name, p) in [('dark', AppPalette.dark), ('light', AppPalette.light)]) {
     group('$name theme text pairs meet 4.5:1', () {
-      final backgrounds = {
-        'background': p.background,
-        'surface': p.surface,
-        'surfaceHigh': p.surfaceHigh,
-      };
+      final grounds = {'background': p.background, 'surface': p.surface};
       final foregrounds = {
         'text': p.text,
         'textMuted': p.textMuted,
+        'textSoft': p.textSoft,
         'accentText': p.accentText,
-        'success': p.success,
-        'warning': p.warning,
-        'danger': p.danger,
       };
-      for (final bg in backgrounds.entries) {
+      for (final bg in grounds.entries) {
         for (final fg in foregrounds.entries) {
           test('${fg.key} on ${bg.key}', () {
             expect(contrast(fg.value, bg.value), greaterThanOrEqualTo(4.5));
@@ -49,31 +43,52 @@ void main() {
         }
       }
 
-      test('accent tint (nav indicator, selected chip)', () {
-        final tint = Color.alphaBlend(p.accentTint, p.surface);
-        // Text placed on the tint must pass 4.5:1.
-        expect(contrast(p.text, tint), greaterThanOrEqualTo(4.5));
-        // Only the selected nav icon uses accentText on the tint. Icons are
-        // non-text content, so WCAG 1.4.11 requires 3:1. Never put
-        // accentText *text* on the tint.
-        expect(contrast(p.accentText, tint), greaterThanOrEqualTo(3));
+      // Insets and sheets. In dark mode surfaceHigh (neutral-700) only
+      // carries full-strength text: muted and accent text fall short there,
+      // so dark inputs use the background fill instead.
+      test('text on surfaceHigh', () {
+        expect(contrast(p.text, p.surfaceHigh), greaterThanOrEqualTo(4.5));
+        expect(contrast(p.textSoft, p.surfaceHigh), greaterThanOrEqualTo(4.5));
       });
+      if (name == 'light') {
+        test('muted and accent text on surfaceHigh', () {
+          expect(contrast(p.textMuted, p.surfaceHigh), greaterThanOrEqualTo(4.5));
+          expect(contrast(p.accentText, p.surfaceHigh), greaterThanOrEqualTo(4.5));
+        });
+      }
 
-      for (final stop in p.cardGradient) {
-        test('membership card text on gradient stop $stop', () {
-          expect(contrast(p.onCardGradient, stop), greaterThanOrEqualTo(4.5));
+      final tinted = {
+        'success on its badge': (p.success, p.successTint),
+        'success on its banner': (p.successStrong, p.successBanner),
+        'warning on its tint': (p.warning, p.warningTint),
+        'danger on its tint': (p.danger, p.dangerTint),
+        'info on its tint': (p.info, p.infoTint),
+        'selected filter chip': (p.onSelectedChip, p.selectedChip),
+        'nav indicator icon': (p.onNavIndicator, p.navIndicator),
+        'text on accent tint (quick action pressed)': (p.text, p.accentSoft),
+        'text on accent tint (quick action hover)': (p.text, p.accentTint),
+        'accent text on accent tint': (p.accentText, p.accentTint),
+        'row icons on surface': (p.rowIcon, p.surface),
+        'membership card text': (p.onCard, p.cardFill),
+        'QR modules': (p.qrInk, p.qrBackground),
+        'snackbar': (p.onSnack, p.snackBackground),
+      };
+      for (final e in tinted.entries) {
+        test(e.key, () {
+          expect(contrast(e.value.$1, e.value.$2), greaterThanOrEqualTo(4.5));
         });
       }
     });
   }
 
-  test('primary button: dark text on orange', () {
-    expect(contrast(AppColors.onOrange, AppColors.orange),
-        greaterThanOrEqualTo(4.5));
+  test('primary buttons: ink label on the accent, light and dark', () {
+    expect(contrast(AppColors.ink, AppColors.accent), greaterThanOrEqualTo(4.5));
+    expect(contrast(AppColors.ink, AppColors.accent400), greaterThanOrEqualTo(4.5));
+    // Pressed: cream on accent-700.
+    expect(contrast(AppColors.cream, AppColors.accent700), greaterThanOrEqualTo(4.5));
   });
 
-  test('white on orange or green fails, which is why it is never used', () {
-    expect(contrast(AppColors.white, AppColors.orange), lessThan(4.5));
-    expect(contrast(AppColors.white, AppColors.darkSuccess), lessThan(4.5));
+  test('cream on the accent fails, which is why it is never used', () {
+    expect(contrast(AppColors.cream, AppColors.accent), lessThan(4.5));
   });
 }

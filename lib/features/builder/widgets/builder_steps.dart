@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../data/dto/builder_dto.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../state/builder_providers.dart';
 import 'choice_widgets.dart';
 
@@ -40,9 +42,9 @@ class BuilderStepBody extends ConsumerWidget {
     return switch (form.step) {
       BuilderStep.energy => Column(children: [
           for (final (key, icon, description) in const [
-            ('low', Icons.battery_2_bar_rounded, 'Take it easy today'),
-            ('medium', Icons.battery_5_bar_rounded, 'A normal session'),
-            ('high', Icons.battery_full_rounded, 'Ready to push hard'),
+            ('low', AppIcons.batteryLow, 'Take it easy today'),
+            ('medium', AppIcons.batteryMedium, 'A normal session'),
+            ('high', AppIcons.batteryFull, 'Ready to push hard'),
           ])
             ChoiceCard(
               label: options.energyLevels[key] ?? key,
@@ -110,8 +112,22 @@ class _TimeStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('$minutes min', style: text.displaySmall, textAlign: TextAlign.center),
-        Slider(
+        SurfaceCard(
+          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.md, AppSpace.sm, AppSpace.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Semantics(
+                liveRegion: true,
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: '$minutes', style: text.displaySmall),
+                    TextSpan(text: ' min', style: text.titleLarge?.copyWith(color: context.palette.textMuted)),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: AppSpace.sm),
+              Slider(
           value: minutes.toDouble().clamp(min.toDouble(), max.toDouble()),
           min: min.toDouble(),
           max: max.toDouble(),
@@ -119,10 +135,12 @@ class _TimeStep extends StatelessWidget {
           label: '$minutes min',
           semanticFormatterCallback: (v) => '${v.round()} minutes',
           onChanged: (v) => onChanged(v.round()),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: AppSpace.sm),
+        const SizedBox(height: AppSpace.md),
         Wrap(
-          alignment: WrapAlignment.center,
           spacing: AppSpace.sm,
           runSpacing: AppSpace.sm,
           children: [
@@ -154,27 +172,26 @@ class _FocusStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (suggested.isNotEmpty) ...[
-          Text('Needs attention', style: text.titleSmall),
-          const SizedBox(height: AppSpace.xs),
-          Text('Based on your workout logs.', style: text.bodySmall),
-          const SizedBox(height: AppSpace.sm),
-          Card(
-            child: Column(
-              children: [
-                for (final m in suggested)
-                  CheckboxListTile(
-                    value: selected.contains(m.key),
-                    onChanged: (_) => onToggle(m.key),
-                    title: Text(m.label),
-                    subtitle: m.reason == null ? null : Text(m.reason!, style: text.bodySmall),
-                    secondary: Icon(Icons.trending_down_rounded, color: context.palette.warning),
+          const SectionHeader('Needs attention', subtitle: 'Based on your workout logs.'),
+          ListCard(
+            children: [
+              for (final m in suggested)
+                Semantics(
+                  checked: selected.contains(m.key),
+                  child: ListRow(
+                    icon: AppIcons.trendingDown,
+                    iconColor: context.palette.warning,
+                    title: m.label,
+                    titleStyle: text.titleSmall,
+                    subtitle: m.reason,
+                    onTap: () => onToggle(m.key),
+                    trailing: Checkbox(value: selected.contains(m.key), onChanged: (_) => onToggle(m.key)),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
           const SizedBox(height: AppSpace.lg),
-          Text('All muscle groups', style: text.titleSmall),
-          const SizedBox(height: AppSpace.sm),
+          const SectionHeader('All muscle groups'),
         ],
         ChipChoices(options: options.muscles, selected: selected, onToggle: onToggle),
       ],

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zoezidesk_member/shared/widgets/surfaces.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:zoezidesk_member/app.dart';
 import 'package:zoezidesk_member/core/router/app_router.dart';
@@ -114,7 +115,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Finish workout').last);
     await settle(tester);
 
-    expect(find.text('Workout complete. Nice work!'), findsOneWidget);
+    expect(find.text('Workout complete. Well done.'), findsOneWidget);
     expect(find.textContaining('35 min'), findsOneWidget);
     expect(find.text('Great'), findsOneWidget);
     expect(find.text('Repeat this workout'), findsOneWidget);
@@ -153,7 +154,7 @@ void main() {
     await settle(tester);
 
     expect(find.text('Saved to your account'), findsOneWidget);
-    expect(find.text('New personal record! Bench Press: Estimated 1RM 78.75 kg'), findsOneWidget);
+    expect(find.text('New personal record. Bench Press: Estimated 1RM 78.75 kg'), findsOneWidget);
     expect(find.text('PR'), findsOneWidget);
     expect(find.text('1 PR'), findsOneWidget);
     expect(haptics, contains('HapticFeedbackType.mediumImpact'));
@@ -215,8 +216,8 @@ void main() {
     await tester.tap(find.text('Log set'));
     await tester.pump();
     expect(find.text('Enter the time or the distance.'), findsOneWidget);
-    await tester.enterText(find.widgetWithText(TextField, 'Time (minutes)'), '30');
-    await tester.enterText(find.widgetWithText(TextField, 'Distance (km)'), '5.2');
+    await tester.enterText(find.descendant(of: find.widgetWithText(LabeledField, 'Time (minutes)'), matching: find.byType(TextField)), '30');
+    await tester.enterText(find.descendant(of: find.widgetWithText(LabeledField, 'Distance (km)'), matching: find.byType(TextField)), '5.2');
     await tester.tap(find.text('Log set'));
     await settle(tester);
     expect(find.text('30 min · 5.2 km'), findsOneWidget);

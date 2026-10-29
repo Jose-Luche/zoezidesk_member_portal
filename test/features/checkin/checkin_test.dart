@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zoezidesk_member/features/dashboard/widgets/dashboard_sections.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:zoezidesk_member/app.dart';
@@ -142,7 +143,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
-        find.text('Checked in at 10:00 AM. Have a great session!'),
+        find.text('Checked in at 10:00 AM. Have a good session.'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
@@ -210,7 +211,7 @@ void main() {
       await tester.pumpWidget(ProviderScope(overrides: env.overrides, child: const ZoeziApp()));
       await tester.pumpAndSettle();
 
-      final action = find.descendant(of: find.byType(Card), matching: find.text('Check-in'));
+      final action = find.descendant(of: find.byType(QuickActionTile), matching: find.text('Check-in'));
       await tester.scrollUntilVisible(action, 200, scrollable: find.byType(Scrollable).first);
       await tester.ensureVisible(action);
       await tester.pumpAndSettle();

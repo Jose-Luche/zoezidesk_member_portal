@@ -17,7 +17,7 @@ Future<void> main() async {
     );
   }
 
-  // Before the first frame, so a light-theme choice never flashes dark.
+  // Before the first frame, so a saved dark-theme choice never flashes light.
   ThemeMode? themeMode;
   try {
     themeMode = await const DevicePreferences(FlutterSecureStore()).readThemeMode();

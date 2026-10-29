@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zoezidesk_member/shared/widgets/surfaces.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:zoezidesk_member/app.dart';
 import 'package:zoezidesk_member/data/dto/builder_dto.dart';
@@ -186,7 +187,10 @@ void main() {
       await openWorkout(tester);
 
       await tapText(tester, 'Save as template');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Template name'), 'Push day');
+      await tester.enterText(
+        find.descendant(of: find.widgetWithText(LabeledField, 'Template name'), matching: find.byType(TextFormField)),
+        'Push day',
+      );
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
       await tester.pumpAndSettle();
 
@@ -221,7 +225,9 @@ void main() {
       );
       expect(find.text('Open workout'), findsOneWidget);
       expect(find.text('Start workout'), findsNothing);
-      final moveUp = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.delete_outline_rounded).first);
+      final moveUp = tester.widget<IconButton>(
+        find.ancestor(of: find.byTooltip('Remove exercise'), matching: find.byType(IconButton)).first,
+      );
       expect(moveUp.onPressed, isNull);
     });
 

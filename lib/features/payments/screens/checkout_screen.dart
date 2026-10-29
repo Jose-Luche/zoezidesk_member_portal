@@ -3,14 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/repositories/checkout_repository.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../state/checkout_controller.dart';
 
 /// Renew or buy a plan by M-Pesa: pick a plan, confirm the number, then
@@ -59,12 +62,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             )
           : StateMessage.error(onAction: controller.load),
       AsyncData(:final value) when !value.mpesaEnabled => const StateMessage(
-          icon: Icons.storefront_rounded,
+          icon: AppIcons.store,
           title: 'Pay at the front desk',
           message: 'Your gym does not take M-Pesa in the app yet. The front desk can renew your membership.',
         ),
       AsyncData(:final value) when value.plans.isEmpty => const StateMessage(
-          icon: Icons.storefront_rounded,
+          icon: AppIcons.store,
           title: 'No plans to buy here',
           message: 'Ask the front desk about plans for your membership.',
         ),
@@ -80,7 +83,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Renew membership')),
+      appBar: const AppTopBar(title: 'Renew membership'),
       body: SafeArea(child: body),
     );
   }
@@ -108,18 +111,17 @@ class _Choose extends ConsumerWidget {
     final sending = state.phase == CheckoutPhase.sending;
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpace.md),
+      padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.lg),
       children: [
         if (options.currentPlanName != null && current != null) ...[
           InfoBanner(
-            icon: Icons.card_membership_rounded,
+            icon: AppIcons.idCard,
             message: 'Your ${options.currentPlanName} plan runs to ${formatDate(current)}. '
                 'A renewal starts the day after.',
           ),
-          const SizedBox(height: AppSpace.md),
+          const SizedBox(height: AppSpace.lg),
         ],
-        Text('Choose a plan', style: text.titleLarge),
-        const SizedBox(height: AppSpace.sm),
+        const SectionHeader('Choose a plan'),
         for (final p in options.plans)
           _PlanCard(
             plan: p,
@@ -127,27 +129,29 @@ class _Choose extends ConsumerWidget {
             isCurrent: p.id == options.currentPlanId,
             onTap: sending ? null : () => controller.selectPlan(p.id),
           ),
-        const SizedBox(height: AppSpace.md),
-        TextField(
-          controller: phone,
-          enabled: !sending,
-          keyboardType: TextInputType.phone,
-          autofillHints: const [AutofillHints.telephoneNumber],
-          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]'))],
-          onChanged: controller.setPhone,
-          decoration: InputDecoration(
-            labelText: 'M-Pesa number',
-            helperText: 'The payment request is sent to this number.',
-            errorText: state.phoneError,
-            prefixIcon: const Icon(Icons.phone_android_rounded),
+        const SizedBox(height: AppSpace.lg),
+        LabeledField(
+          label: 'M-Pesa number',
+          child: TextField(
+            controller: phone,
+            enabled: !sending,
+            keyboardType: TextInputType.phone,
+            autofillHints: const [AutofillHints.telephoneNumber],
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]'))],
+            onChanged: controller.setPhone,
+            decoration: InputDecoration(
+              helperText: 'The payment request is sent to this number.',
+              errorText: state.phoneError,
+              prefixIcon: const FieldIcon(AppIcons.smartphone),
+            ),
           ),
         ),
         if (plan != null) ...[
           const SizedBox(height: AppSpace.md),
-          Text(
-            'Membership from ${formatDate(starts)} to '
-            '${formatDate(starts.add(Duration(days: plan.durationDays)))}.',
-            style: text.bodyMedium,
+          InfoBanner(
+            icon: AppIcons.calendarDays,
+            message: 'Membership from ${formatDate(starts)} to '
+                '${formatDate(starts.add(Duration(days: plan.durationDays)))}.',
           ),
         ],
         if (state.error != null) ...[
@@ -156,6 +160,7 @@ class _Choose extends ConsumerWidget {
         ],
         const SizedBox(height: AppSpace.lg),
         FilledButton(
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(AppSizes.sheetButton)),
           onPressed: plan == null || sending ? null : controller.pay,
           child: Text(
             sending
@@ -169,7 +174,6 @@ class _Choose extends ConsumerWidget {
         Text(
           'You will get an M-Pesa prompt on your phone. Enter your PIN to pay.',
           style: text.bodySmall,
-          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -196,24 +200,21 @@ class _PlanCard extends StatelessWidget {
     return Semantics(
       selected: selected,
       inMutuallyExclusiveGroup: true,
-      child: Card(
-        margin: const EdgeInsets.only(bottom: AppSpace.sm),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          side: BorderSide(color: selected ? p.accentText : p.border, width: selected ? 2 : 1),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.card),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: AppSpace.sm),
+        child: SelectableSurface(
+          selected: selected,
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(AppSpace.md),
+            padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.md, AppSpace.gutter, AppSpace.md),
             child: Row(
               children: [
-                Icon(
-                  selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                AppIcon(
+                  selected ? AppIcons.circleDot : AppIcons.circle,
+                  size: AppSizes.iconRow,
                   color: selected ? p.accentText : p.textMuted,
                 ),
-                const SizedBox(width: AppSpace.md),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +224,7 @@ class _PlanCard extends StatelessWidget {
                           Flexible(child: Text(plan.name, style: text.titleSmall)),
                           if (isCurrent) ...[
                             const SizedBox(width: AppSpace.sm),
-                            const AppBadge(label: 'Your plan', tone: BadgeTone.neutral),
+                            const AppBadge(label: 'Your plan', tone: BadgeTone.success, icon: AppIcons.circleCheck),
                           ],
                         ],
                       ),
@@ -269,7 +270,7 @@ class _Progress extends ConsumerWidget {
 
     final (icon, tone, title, message) = switch (state.phase) {
       CheckoutPhase.completed => (
-          Icons.check_circle_rounded,
+          AppIcons.circleCheck,
           BadgeTone.success,
           'Payment received',
           [
@@ -280,20 +281,20 @@ class _Progress extends ConsumerWidget {
           ].join(' '),
         ),
       CheckoutPhase.failed => (
-          Icons.error_outline_rounded,
+          AppIcons.circleAlert,
           BadgeTone.danger,
           'Payment not completed',
           '${_sentence(result?.failureReason ?? 'M-Pesa did not complete the payment')} You have not been charged.',
         ),
       CheckoutPhase.timedOut => (
-          Icons.hourglass_bottom_rounded,
+          AppIcons.hourglass,
           BadgeTone.warning,
           'Still waiting for M-Pesa',
           'If you entered your PIN, the payment will show in your payments once M-Pesa confirms it. '
               'You will not be charged twice.',
         ),
       _ => (
-          Icons.phone_android_rounded,
+          AppIcons.smartphone,
           BadgeTone.highlight,
           'Check your phone',
           'Enter your M-Pesa PIN on the prompt sent to $phone'
@@ -303,44 +304,62 @@ class _Progress extends ConsumerWidget {
     };
 
     final p = context.palette;
-    final color = switch (tone) {
-      BadgeTone.success => p.success,
-      BadgeTone.danger => p.danger,
-      BadgeTone.warning => p.warning,
-      _ => p.accentText,
-    };
+    final (color, fill) = tone.badgeColors(p);
     final text = Theme.of(context).textTheme;
+    const big = Size.fromHeight(AppSizes.sheetButton);
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpace.lg),
+      padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.lg, AppSpace.gutter, AppSpace.lg),
       children: [
-        const SizedBox(height: AppSpace.xl),
-        Icon(icon, size: AppSizes.avatar, color: color),
-        const SizedBox(height: AppSpace.md),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
+            alignment: Alignment.center,
+            child: AppIcon(icon, size: 32, color: color),
+          ),
+        ),
+        const SizedBox(height: AppSpace.lg),
         Semantics(
           liveRegion: true,
-          child: Text(title, style: text.headlineSmall, textAlign: TextAlign.center),
+          child: Text(title, style: text.headlineMedium),
         ),
         const SizedBox(height: AppSpace.sm),
-        Text(message, style: text.bodyMedium, textAlign: TextAlign.center),
+        Text(message, style: text.bodyLarge),
         const SizedBox(height: AppSpace.xl),
         ...switch (state.phase) {
           CheckoutPhase.completed => [
-              FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Done')),
+              FilledButton(
+                style: FilledButton.styleFrom(minimumSize: big),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Done'),
+              ),
             ],
           CheckoutPhase.failed => [
-              FilledButton(onPressed: controller.startOver, child: const Text('Try again')),
+              FilledButton(
+                style: FilledButton.styleFrom(minimumSize: big),
+                onPressed: controller.startOver,
+                child: const Text('Try again'),
+              ),
             ],
           CheckoutPhase.timedOut => [
               FilledButton(
+                style: FilledButton.styleFrom(minimumSize: big),
                 onPressed: state.checking ? null : controller.checkAgain,
                 child: Text(state.checking ? 'Checking…' : 'Check again'),
               ),
               const SizedBox(height: AppSpace.sm),
-              OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close')),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(minimumSize: big),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
             ],
           _ => [
               OutlinedButton(
+                style: OutlinedButton.styleFrom(minimumSize: big),
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Close'),
               ),
@@ -348,7 +367,6 @@ class _Progress extends ConsumerWidget {
               Text(
                 'Closing does not cancel the request. The payment will show in your payments.',
                 style: text.bodySmall,
-                textAlign: TextAlign.center,
               ),
             ],
         },
@@ -362,7 +380,7 @@ class _ChooseSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.all(AppSpace.md),
+    padding: EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.md),
     child: Column(
       children: [
         SkeletonListTile(),

@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../data/repositories/workouts_repository.dart';
+import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_sheet.dart';
+import '../../../shared/widgets/info_banner.dart';
+import '../../../shared/widgets/surfaces.dart';
 
 /// What the member chose in the set sheet.
 sealed class SetSheetResult {
@@ -31,11 +36,8 @@ Future<SetSheetResult?> showSetSheet(
   SetValues? initial,
   bool editing = false,
 }) =>
-    showModalBottomSheet<SetSheetResult>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      showDragHandle: true,
+    showAppSheet<SetSheetResult>(
+      context,
       builder: (_) => _SetSheet(
         exerciseName: exerciseName,
         setNumber: setNumber,
@@ -118,53 +120,41 @@ class _SetSheetState extends State<_SetSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(AppSpace.md, 0, AppSpace.md, AppSpace.md + bottom),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(widget.exerciseName, style: text.titleLarge),
-            Text('Set ${widget.setNumber}', style: text.bodyMedium),
-            const SizedBox(height: AppSpace.md),
-            if (widget.cardio) ...[
-              _NumberField(name: 'time', label: 'Time (minutes)', controller: _duration, decimals: false,
-                  onMinus: () => _step(_duration, -5, max: 1440), onPlus: () => _step(_duration, 5, max: 1440)),
-              const SizedBox(height: AppSpace.sm),
-              _NumberField(name: 'distance', label: 'Distance (km)', controller: _distance, decimals: true,
-                  onMinus: () => _step(_distance, -0.5), onPlus: () => _step(_distance, 0.5)),
-            ] else ...[
-              _NumberField(name: 'weight', label: 'Weight (kg)', controller: _weight, decimals: true,
-                  helper: 'Leave empty for bodyweight.',
-                  onMinus: () => _step(_weight, -2.5), onPlus: () => _step(_weight, 2.5)),
-              const SizedBox(height: AppSpace.sm),
-              _NumberField(name: 'reps', label: 'Reps', controller: _reps, decimals: false,
-                  onMinus: () => _step(_reps, -1), onPlus: () => _step(_reps, 1)),
-            ],
-            const SizedBox(height: AppSpace.sm),
-            _NumberField(name: 'effort', label: 'Effort, RPE 0–10 (optional)', controller: _rpe, decimals: false,
-                onMinus: () => _step(_rpe, -1, max: 10), onPlus: () => _step(_rpe, 1, max: 10)),
-            if (_error != null) ...[
-              const SizedBox(height: AppSpace.sm),
-              Text(_error!, style: text.bodyMedium?.copyWith(color: context.palette.danger)),
-            ],
-            const SizedBox(height: AppSpace.md),
-            FilledButton(onPressed: _save, child: Text(widget.editing ? 'Save changes' : 'Log set')),
-            if (widget.editing) ...[
-              const SizedBox(height: AppSpace.sm),
-              TextButton(
-                style: TextButton.styleFrom(foregroundColor: context.palette.danger),
-                onPressed: () => Navigator.of(context).pop(const DeleteSet()),
-                child: const Text('Delete set'),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return SheetLayout(
+      title: widget.exerciseName,
+      subtitle: 'Set ${widget.setNumber}',
+      body: [
+        if (widget.cardio) ...[
+          _NumberField(name: 'time', label: 'Time (minutes)', controller: _duration, decimals: false,
+              onMinus: () => _step(_duration, -5, max: 1440), onPlus: () => _step(_duration, 5, max: 1440)),
+          const SizedBox(height: AppSpace.md),
+          _NumberField(name: 'distance', label: 'Distance (km)', controller: _distance, decimals: true,
+              onMinus: () => _step(_distance, -0.5), onPlus: () => _step(_distance, 0.5)),
+        ] else ...[
+          _NumberField(name: 'weight', label: 'Weight (kg)', controller: _weight, decimals: true,
+              helper: 'Leave empty for bodyweight.',
+              onMinus: () => _step(_weight, -2.5), onPlus: () => _step(_weight, 2.5)),
+          const SizedBox(height: AppSpace.md),
+          _NumberField(name: 'reps', label: 'Reps', controller: _reps, decimals: false,
+              onMinus: () => _step(_reps, -1), onPlus: () => _step(_reps, 1)),
+        ],
+        const SizedBox(height: AppSpace.md),
+        _NumberField(name: 'effort', label: 'Effort, RPE 0–10 (optional)', controller: _rpe, decimals: false,
+            onMinus: () => _step(_rpe, -1, max: 10), onPlus: () => _step(_rpe, 1, max: 10)),
+        if (_error != null) ...[
+          const SizedBox(height: AppSpace.md),
+          InfoBanner(tone: BadgeTone.danger, message: _error!),
+        ],
+      ],
+      actions: [
+        FilledButton(onPressed: _save, child: Text(widget.editing ? 'Save changes' : 'Log set')),
+        if (widget.editing)
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(foregroundColor: context.palette.danger),
+            onPressed: () => Navigator.of(context).pop(const DeleteSet()),
+            child: const Text('Delete set'),
+          ),
+      ],
     );
   }
 }
@@ -189,35 +179,41 @@ class _NumberField extends StatelessWidget {
   final VoidCallback onPlus;
   final String? helper;
 
+  static const _stepper = BoxConstraints.tightFor(width: AppSizes.input, height: AppSizes.input);
+
   @override
-  Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          IconButton.outlined(
-            onPressed: onMinus,
-            tooltip: 'Decrease $name',
-            icon: const Icon(Icons.remove_rounded),
-            constraints: const BoxConstraints.tightFor(width: AppSizes.minTouch, height: AppSizes.minTouch),
-          ),
-          const SizedBox(width: AppSpace.sm),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.numberWithOptions(decimal: decimals),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(decimals ? RegExp(r'[0-9.,]') : RegExp(r'[0-9]')),
-              ],
-              decoration: InputDecoration(labelText: label, helperText: helper),
+  Widget build(BuildContext context) => LabeledField(
+        label: label,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            IconButton.outlined(
+              onPressed: onMinus,
+              tooltip: 'Decrease $name',
+              icon: const AppIcon(AppIcons.minus),
+              constraints: _stepper,
             ),
-          ),
-          const SizedBox(width: AppSpace.sm),
-          IconButton.outlined(
-            onPressed: onPlus,
-            tooltip: 'Increase $name',
-            icon: const Icon(Icons.add_rounded),
-            constraints: const BoxConstraints.tightFor(width: AppSizes.minTouch, height: AppSizes.minTouch),
-          ),
-        ],
+            const SizedBox(width: AppSpace.sm),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium,
+                keyboardType: TextInputType.numberWithOptions(decimal: decimals),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(decimals ? RegExp(r'[0-9.,]') : RegExp(r'[0-9]')),
+                ],
+                decoration: InputDecoration(helperText: helper),
+              ),
+            ),
+            const SizedBox(width: AppSpace.sm),
+            IconButton.outlined(
+              onPressed: onPlus,
+              tooltip: 'Increase $name',
+              icon: const AppIcon(AppIcons.plus),
+              constraints: _stepper,
+            ),
+          ],
+        ),
       );
 }

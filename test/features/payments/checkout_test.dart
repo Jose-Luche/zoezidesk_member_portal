@@ -177,6 +177,7 @@ void main() {
       expect(find.textContaining('Your Quarterly plan runs to 12 Nov 2026'), findsOneWidget);
       expect(find.text('Your plan'), findsOneWidget);
       expect(find.text('Membership from 13 Nov 2026 to 11 Feb 2027.'), findsOneWidget);
+      await tester.scrollUntilVisible(pay('KES 8,000'), 200, scrollable: find.byType(Scrollable).first);
       expect(pay('KES 8,000'), findsOneWidget);
     });
 

@@ -5,13 +5,16 @@ import 'package:intl/intl.dart';
 
 import '../../../core/errors/app_failure.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/repositories/payments_repository.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../../shared/widgets/sync_status.dart';
 import '../state/payments_providers.dart';
 
@@ -66,7 +69,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     final text = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Payments')),
+      appBar: const AppTopBar(title: 'Payments'),
       body: RefreshIndicator(
         onRefresh: controller.refresh,
         child: CustomScrollView(
@@ -74,41 +77,10 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.all(AppSpace.md),
+              padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.sm),
               sliver: SliverList.list(
                 children: [
-                  FilledButton.icon(
-                    onPressed: () => context.push(Routes.checkout),
-                    icon: const Icon(Icons.phone_android_rounded),
-                    label: const Text('Renew with M-Pesa'),
-                  ),
-                  const SizedBox(height: AppSpace.md),
-                  if (summary != null)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpace.md),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Total paid', style: text.bodySmall),
-                                  const SizedBox(height: AppSpace.xs),
-                                  Text(formatKes(summary.totalPaid), style: text.headlineSmall),
-                                ],
-                              ),
-                            ),
-                            AppBadge(
-                              label: summary.total == 1 ? '1 payment' : '${summary.total} payments',
-                              tone: BadgeTone.neutral,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                   if (fetchedAt != null) ...[
-                    const SizedBox(height: AppSpace.sm),
                     SyncStatus(
                       fetchedAt: fetchedAt,
                       now: now,
@@ -116,7 +88,37 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                       refreshError: state.refresh.error,
                       onRetry: controller.refresh,
                     ),
+                    const SizedBox(height: AppSpace.md),
                   ],
+                  SurfaceCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            AppIcon(AppIcons.wallet, size: AppSizes.iconRow, color: context.palette.accentText),
+                            const SizedBox(width: AppSpace.sm),
+                            Expanded(child: Text('Total paid', style: text.bodySmall)),
+                            if (summary != null)
+                              AppBadge(
+                                label: summary.total == 1 ? '1 payment' : '${summary.total} payments',
+                                tone: BadgeTone.neutral,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpace.sm),
+                        Text(summary == null ? '–' : formatKes(summary.totalPaid), style: text.headlineSmall),
+                        const SizedBox(height: AppSpace.md),
+                        FilledButton.icon(
+                          onPressed: () => context.push(Routes.checkout),
+                          icon: const AppIcon(AppIcons.smartphone),
+                          label: const Text('Renew with M-Pesa'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.lg),
+                  const SectionHeader('History'),
                 ],
               ),
             ),
@@ -128,7 +130,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   List<Widget> _list(List<PaymentRecord>? rows, DateTime? fetchedAt, PaymentsState state) {
-    const pad = EdgeInsets.symmetric(horizontal: AppSpace.md);
+    const pad = EdgeInsets.symmetric(horizontal: AppSpace.gutter);
     final controller = ref.read(paymentsControllerProvider.notifier);
     if (rows == null || (rows.isEmpty && fetchedAt == null && !state.refresh.hasError)) {
       return const [
@@ -160,7 +162,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               : fetchedAt == null && error != null
               ? StateMessage.error(onAction: controller.refresh)
               : const StateMessage(
-                  icon: Icons.payments_rounded,
+                  icon: AppIcons.banknote,
                   title: 'No payments yet',
                   message: 'Payments made at the front desk or by M-Pesa appear here.',
                 ),
@@ -215,18 +217,22 @@ class _PaymentTile extends StatelessWidget {
       final other => other ?? '',
     };
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpace.sm),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.md, AppSpace.sm, AppSpace.md),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.sm),
+      child: SurfaceCard.tile(
+        padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 14, AppSpace.sm, 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: AppSpace.xs),
-              child: Icon(p.method == 'mpesa' ? Icons.phone_android_rounded : Icons.payments_rounded),
+              padding: const EdgeInsets.only(top: 2),
+              child: AppIcon(
+                p.method == 'mpesa' ? AppIcons.smartphone : AppIcons.banknote,
+                size: AppSizes.iconRow,
+                color: context.palette.rowIcon,
+              ),
             ),
-            const SizedBox(width: AppSpace.md),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,14 +257,15 @@ class _PaymentTile extends StatelessWidget {
                 switch (p.status) {
                   'completed' when p.hasReceiptPdf => TextButton.icon(
                     onPressed: onReceipt,
-                    icon: const Icon(Icons.receipt_long_rounded),
+                    style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
+                    icon: const AppIcon(AppIcons.receipt),
                     label: Text(opening ? 'Opening…' : 'Receipt'),
                   ),
-                  'completed' => const _StatusBadge(label: 'Paid', tone: BadgeTone.success),
-                  'failed' => const _StatusBadge(label: 'Failed', tone: BadgeTone.danger),
-                  'voided' => const _StatusBadge(label: 'Voided', tone: BadgeTone.neutral),
-                  'cancelled' => const _StatusBadge(label: 'Cancelled', tone: BadgeTone.neutral),
-                  _ => const _StatusBadge(label: 'Pending', tone: BadgeTone.warning),
+                  'completed' => const _StatusBadge(label: 'Paid', tone: BadgeTone.success, icon: AppIcons.circleCheck),
+                  'failed' => const _StatusBadge(label: 'Failed', tone: BadgeTone.danger, icon: AppIcons.circleAlert),
+                  'voided' => const _StatusBadge(label: 'Voided', tone: BadgeTone.neutral, icon: AppIcons.x),
+                  'cancelled' => const _StatusBadge(label: 'Cancelled', tone: BadgeTone.neutral, icon: AppIcons.x),
+                  _ => const _StatusBadge(label: 'Pending', tone: BadgeTone.warning, icon: AppIcons.clock),
                 },
               ],
             ),
@@ -270,14 +277,15 @@ class _PaymentTile extends StatelessWidget {
 }
 
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.tone});
+  const _StatusBadge({required this.label, required this.tone, required this.icon});
 
   final String label;
   final BadgeTone tone;
+  final LucideIcon icon;
 
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(right: AppSpace.sm),
-    child: AppBadge(label: label, tone: tone),
+    child: AppBadge(label: label, tone: tone, icon: icon),
   );
 }

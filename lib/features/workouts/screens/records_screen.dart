@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/repositories/workouts_repository.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../../shared/widgets/sync_status.dart';
 import '../state/workouts_providers.dart';
 import '../workout_format.dart';
@@ -44,7 +47,7 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
           : const SkeletonList(),
       AsyncData(value: final c?) => ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpace.md),
+          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.lg),
           children: [
             SyncStatus(
               fetchedAt: c.fetchedAt,
@@ -53,18 +56,18 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
               refreshError: refresh.error,
               onRetry: controller.refresh,
             ),
-            const SizedBox(height: AppSpace.sm),
+            const SizedBox(height: AppSpace.md),
             Row(
               children: [
-                Expanded(child: _Stat(label: 'Records', value: '${c.data.total}')),
+                Expanded(child: _Stat(icon: AppIcons.trophy, label: 'Records', value: '${c.data.total}')),
                 const SizedBox(width: AppSpace.sm),
-                Expanded(child: _Stat(label: 'This month', value: '${c.data.thisMonth}')),
+                Expanded(child: _Stat(icon: AppIcons.calendar, label: 'This month', value: '${c.data.thisMonth}')),
               ],
             ),
-            const SizedBox(height: AppSpace.md),
+            const SizedBox(height: AppSpace.lg),
             if (c.data.exercises.isEmpty)
               const StateMessage(
-                icon: Icons.emoji_events_outlined,
+                icon: AppIcons.trophy,
                 title: 'No records yet',
                 message: 'Log sets with weight and reps. A new best is marked as a PR.',
               )
@@ -78,28 +81,30 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Personal records')),
+      appBar: const AppTopBar(title: 'Personal records'),
       body: RefreshIndicator(onRefresh: controller.refresh, child: body),
     );
   }
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
+  const _Stat({required this.icon, required this.label, required this.value});
 
+  final LucideIcon icon;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpace.md),
+    return SurfaceCard.tile(
+      child: MergeSemantics(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(value, style: text.headlineSmall),
+            AppIcon(icon, size: AppSizes.iconRow, color: context.palette.accentText),
+            const SizedBox(height: 10),
+            Text(value, style: text.headlineSmall?.copyWith(fontSize: 22)),
             Text(label, style: text.bodySmall),
           ],
         ),
@@ -117,10 +122,11 @@ class _ExerciseRecordsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final r = records;
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpace.sm),
-      clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.sm),
+      child: SurfaceCard.tile(
+        padding: EdgeInsets.zero,
+        child: ExpansionTile(
         title: Text(r.name, style: text.titleSmall),
         subtitle: Text(
           [
@@ -129,8 +135,8 @@ class _ExerciseRecordsCard extends StatelessWidget {
           ].join(' · '),
           style: text.bodySmall,
         ),
-        trailing: AppBadge(label: '${r.records.length}', tone: BadgeTone.highlight, icon: Icons.emoji_events_rounded),
-        childrenPadding: const EdgeInsets.fromLTRB(AppSpace.md, 0, AppSpace.md, AppSpace.sm),
+        trailing: AppBadge(label: '${r.records.length}', tone: BadgeTone.highlight, icon: AppIcons.trophy),
+        childrenPadding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter, AppSpace.md),
         children: [
           for (final pr in r.records)
             Padding(
@@ -143,6 +149,7 @@ class _ExerciseRecordsCard extends StatelessWidget {
               ),
             ),
         ],
+        ),
       ),
     );
   }

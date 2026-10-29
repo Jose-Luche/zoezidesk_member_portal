@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/db/app_database.dart';
 import '../../../data/repositories/workouts_repository.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../workout_format.dart';
 
 List<String> equipmentOf(LibraryExercise e) {
@@ -52,17 +54,18 @@ class _ExerciseDetail extends StatelessWidget {
         .where((s) => s.isNotEmpty)
         .toList();
 
+    final p = context.palette;
     return ListView(
       controller: scroll,
-      padding: const EdgeInsets.fromLTRB(AppSpace.md, 0, AppSpace.md, AppSpace.lg),
+      padding: EdgeInsets.fromLTRB(22, 0, 22, AppSpace.xl + MediaQuery.viewPaddingOf(context).bottom),
       children: [
-        Text(exercise.name, style: text.headlineSmall),
-        const SizedBox(height: AppSpace.sm),
+        Semantics(header: true, child: Text(exercise.name, style: text.headlineSmall?.copyWith(fontSize: 24))),
+        const SizedBox(height: 12),
         Wrap(
           spacing: AppSpace.sm,
           runSpacing: AppSpace.sm,
           children: [
-            AppBadge(label: muscleLabel(exercise.muscleGroup), tone: BadgeTone.highlight),
+            AppBadge(label: muscleLabel(exercise.muscleGroup), tone: BadgeTone.highlight, icon: AppIcons.dumbbell),
             for (final e in equipmentOf(exercise)) AppBadge(label: e, tone: BadgeTone.neutral),
             if (exercise.difficulty != null) AppBadge(label: _titleCase(exercise.difficulty!), tone: BadgeTone.neutral),
           ],
@@ -70,7 +73,7 @@ class _ExerciseDetail extends StatelessWidget {
         if (exercise.imageUrl != null) ...[
           const SizedBox(height: AppSpace.md),
           ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.card),
+            borderRadius: BorderRadius.circular(AppRadius.tile),
             child: CachedNetworkImage(
               imageUrl: exercise.imageUrl!,
               height: 200,
@@ -82,20 +85,33 @@ class _ExerciseDetail extends StatelessWidget {
         ],
         if (last != null) ...[
           const SizedBox(height: AppSpace.md),
-          Text('Last time · ${formatDate(last.date)}', style: text.titleSmall),
-          const SizedBox(height: AppSpace.xs),
-          Text(last.sets.map(formatSet).join('\n'), style: text.bodyMedium),
+          SurfaceCard.tile(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    AppIcon(AppIcons.history, size: AppSizes.iconRow, color: p.accentText),
+                    const SizedBox(width: AppSpace.sm),
+                    Expanded(child: Text('Last time · ${formatDate(last.date)}', style: text.titleSmall)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(last.sets.map(formatSet).join('\n'), style: text.bodyLarge),
+              ],
+            ),
+          ),
         ],
-        const SizedBox(height: AppSpace.md),
-        Text('How to do it', style: text.titleSmall),
-        const SizedBox(height: AppSpace.xs),
+        const SizedBox(height: AppSpace.lg),
+        Text('How to do it', style: text.titleLarge),
+        const SizedBox(height: AppSpace.sm),
         if (steps.isEmpty)
-          Text('No instructions yet. Ask a trainer at the gym.', style: text.bodyMedium)
+          Text('No instructions yet. Ask a trainer at the gym.', style: text.bodyLarge)
         else
           for (final s in steps)
             Padding(
-              padding: const EdgeInsets.only(bottom: AppSpace.xs),
-              child: Text(s, style: text.bodyMedium),
+              padding: const EdgeInsets.only(bottom: AppSpace.sm),
+              child: Text(s, style: text.bodyLarge),
             ),
       ],
     );

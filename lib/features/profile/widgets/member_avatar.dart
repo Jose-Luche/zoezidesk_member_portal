@@ -19,15 +19,15 @@ class MemberAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final p = context.palette;
     final fallback = Container(
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: p.cardFill, shape: BoxShape.circle),
       child: Text(
         _initials,
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: scheme.onPrimary),
+        style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: p.onCard),
       ),
     );
 

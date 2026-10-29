@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../state/otp_controllers.dart';
 import '../widgets/auth_scaffold.dart';
 
@@ -90,22 +91,27 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(
-            controller: _code,
-            autofocus: true,
-            keyboardType: TextInputType.number,
-            autofillHints: const [AutofillHints.oneTimeCode],
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(6),
-            ],
-            textAlign: TextAlign.center,
-            style: text.headlineMedium?.copyWith(letterSpacing: AppSpace.sm),
-            decoration: const InputDecoration(labelText: '6-digit code'),
-            onChanged: (v) {
-              if (v.length == 6) _verify();
-            },
-            onSubmitted: (_) => _verify(),
+          LabeledField(
+            label: '6-digit code',
+            child: TextField(
+              controller: _code,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              autofillHints: const [AutofillHints.oneTimeCode],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
+              ],
+              textAlign: TextAlign.center,
+              style: text.headlineSmall?.copyWith(letterSpacing: AppSpace.sm),
+              decoration: const InputDecoration(
+                contentPadding: EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: 12),
+              ),
+              onChanged: (v) {
+                if (v.length == 6) _verify();
+              },
+              onSubmitted: (_) => _verify(),
+            ),
           ),
           if (kDebugMode && _debugCode != null) ...[
             const SizedBox(height: AppSpace.sm),
@@ -122,6 +128,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           ListenableBuilder(
             listenable: _code,
             builder: (context, _) => FilledButton(
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(AppSizes.sheetButton)),
               onPressed: busy || _code.text.length != 6 ? null : _verify,
               child: Text(busy ? 'Checking…' : 'Verify'),
             ),

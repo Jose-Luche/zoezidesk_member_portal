@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zoezidesk_member/features/dashboard/widgets/dashboard_sections.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:zoezidesk_member/app.dart';
 
@@ -66,8 +67,7 @@ void main() {
     expect(find.text('Friday 23 October'), findsOneWidget);
     expect(find.text('HIIT Blast'), findsOneWidget);
     expect(find.text('6:00 PM – 7:00 PM'), findsOneWidget);
-    expect(find.text('With Coach Amina'), findsOneWidget);
-    expect(find.text('6 of 10 spots left'), findsOneWidget);
+    expect(find.text('With Coach Amina · 6 of 10 spots left'), findsOneWidget);
     expect(find.text('Spin'), findsNothing);
 
     await tester.tap(find.bySemanticsLabel(RegExp('Saturday 24 October')));
@@ -90,7 +90,7 @@ void main() {
     await tapText(tester, 'Book class');
 
     expect(find.text('Booked'), findsOneWidget);
-    expect(find.text('5 of 10 spots left'), findsOneWidget);
+    expect(find.textContaining('5 of 10 spots left'), findsOneWidget);
     expect(find.text('Booked! HIIT Blast on Oct 23 at 6:00 PM.'), findsOneWidget);
     expect(haptics, contains('HapticFeedbackType.lightImpact'));
     expect(env.http.requests.single.headers['Idempotency-Key'], isNotEmpty);
@@ -104,8 +104,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('You are offline. Showing saved data'), findsOneWidget);
-    expect(find.text('Live spots need a connection'), findsOneWidget);
-    expect(find.text('6 of 10 spots left'), findsNothing);
+    expect(find.textContaining('live spots need a connection'), findsOneWidget);
+    expect(find.textContaining('6 of 10 spots left'), findsNothing);
 
     await tapText(tester, 'Book');
     await tapText(tester, 'Book class');
@@ -143,7 +143,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('HIIT Blast'), findsOneWidget);
-    expect(find.text('6 of 10 spots left'), findsOneWidget);
+    expect(find.textContaining('6 of 10 spots left'), findsOneWidget);
     expect(find.textContaining('You are offline'), findsNothing);
   });
 
@@ -237,7 +237,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(overrides: env.overrides, child: const ZoeziApp()));
     await tester.pumpAndSettle();
 
-    final action = find.descendant(of: find.byType(Card), matching: find.text('Classes'));
+    final action = find.descendant(of: find.byType(QuickActionTile), matching: find.text('Classes'));
     await tester.scrollUntilVisible(action, 200, scrollable: find.byType(Scrollable).first);
     await tester.ensureVisible(action);
     await tester.pumpAndSettle();

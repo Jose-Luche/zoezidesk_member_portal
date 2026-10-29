@@ -2,73 +2,86 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zoezidesk_member/core/theme/app_theme.dart';
 import 'package:zoezidesk_member/core/theme/app_tokens.dart';
+import 'package:zoezidesk_member/core/theme/theme_mode_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  for (final (name, theme) in [('dark', AppTheme.dark), ('light', AppTheme.light)]) {
+  for (final (name, theme, primary) in [
+    ('dark', AppTheme.dark, AppColors.accent400),
+    ('light', AppTheme.light, AppColors.accent),
+  ]) {
     group('$name theme', () {
-      test('primary is orange with dark text', () {
-        expect(theme.colorScheme.primary, AppColors.orange);
-        expect(theme.colorScheme.onPrimary, AppColors.onOrange);
+      test('primary is terracotta with an ink label, never cream', () {
+        expect(theme.colorScheme.primary, primary);
+        expect(theme.colorScheme.onPrimary, AppColors.ink);
+        final fg = theme.filledButtonTheme.style!.foregroundColor!.resolve({});
+        expect(fg, AppColors.ink);
       });
 
       test('carries the semantic palette', () {
         expect(theme.extension<AppPalette>(), isNotNull);
       });
 
-      test('body text is at least 16sp', () {
+      test('Caprasimo for titles and headings, Figtree for body', () {
         final t = theme.textTheme;
-        for (final style in [t.bodyLarge, t.bodyMedium, t.bodySmall]) {
-          expect(style!.fontSize, greaterThanOrEqualTo(16));
+        for (final style in [t.headlineLarge, t.headlineMedium, t.headlineSmall, t.titleLarge]) {
+          expect(style!.fontFamily, AppFonts.heading);
+          expect(style.fontWeight, FontWeight.w400);
+        }
+        for (final style in [t.titleMedium, t.titleSmall, t.bodyLarge, t.bodyMedium, t.bodySmall, t.labelLarge]) {
+          expect(style!.fontFamily, AppFonts.body);
+        }
+        expect(t.headlineLarge!.fontSize, 30);
+        expect(t.bodyLarge!.fontSize, 16);
+      });
+
+      test('buttons are pills at least 48dp tall', () {
+        for (final style in [
+          theme.filledButtonTheme.style!,
+          theme.outlinedButtonTheme.style!,
+          theme.textButtonTheme.style!,
+        ]) {
+          expect(style.minimumSize!.resolve({})!.height, greaterThanOrEqualTo(AppSizes.minTouch));
+          expect(style.shape!.resolve({}), isA<StadiumBorder>());
         }
       });
 
-      test('headings use Barlow Condensed and body uses Barlow', () {
-        expect(theme.textTheme.headlineMedium!.fontFamily,
-            equals(AppFonts.heading));
-        expect(theme.textTheme.bodyMedium!.fontFamily, AppFonts.body);
-      });
-
-      test('filled buttons are at least 48dp with 8dp radius', () {
-        final style = theme.filledButtonTheme.style!;
-        expect(style.minimumSize!.resolve({})!.height,
-            greaterThanOrEqualTo(AppSizes.minTouch));
-        final shape = style.shape!.resolve({})! as RoundedRectangleBorder;
-        expect(shape.borderRadius,
-            BorderRadius.circular(AppRadius.control));
-      });
-
-      test('cards use 12dp radius', () {
+      test('cards are flat with a 26dp radius', () {
         final shape = theme.cardTheme.shape! as RoundedRectangleBorder;
         expect(shape.borderRadius, BorderRadius.circular(AppRadius.card));
+        expect(theme.cardTheme.elevation, 0);
       });
 
-      test('inputs keep labels visible and focus in primary', () {
+      test('inputs are pills; labels sit above, never inside', () {
         final input = theme.inputDecorationTheme;
-        expect(input.floatingLabelBehavior, FloatingLabelBehavior.always);
+        expect(input.floatingLabelBehavior, FloatingLabelBehavior.never);
         final focused = input.focusedBorder! as OutlineInputBorder;
-        expect(focused.borderSide.color, AppColors.orange);
-        expect(focused.borderRadius, BorderRadius.circular(AppRadius.control));
+        expect(focused.borderSide.color, primary);
+        expect(focused.borderRadius, BorderRadius.circular(AppSizes.input / 2));
       });
 
-      test('bottom sheets use 16dp radius and a plain scrim', () {
+      test('bottom sheets use 32dp top corners and a plain ink scrim', () {
         final sheet = theme.bottomSheetTheme;
         expect(sheet.modalBarrierColor, AppColors.scrim);
         expect((sheet.shape! as RoundedRectangleBorder).borderRadius,
             const BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)));
       });
+
+      test('no ripples: pressed states tint from the ramp', () {
+        expect(theme.splashFactory, NoSplash.splashFactory);
+      });
     });
   }
 
-  test('dark cards use a border instead of a shadow', () {
-    final shape = AppTheme.dark.cardTheme.shape! as RoundedRectangleBorder;
-    expect(AppTheme.dark.cardTheme.elevation, 0);
-    expect(shape.side.color, AppColors.darkBorder);
+  test('light is the default theme', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    expect(container.read(themeModeProvider), ThemeMode.light);
   });
 
-  test('light cards use a light shadow and no border', () {
-    final shape = AppTheme.light.cardTheme.shape! as RoundedRectangleBorder;
-    expect(AppTheme.light.cardTheme.elevation, greaterThan(0));
-    expect(shape.side, BorderSide.none);
+  test('dark mode drops shadows', () {
+    expect(AppPalette.dark.shadows, isEmpty);
+    expect(AppPalette.light.shadows, isNotEmpty);
   });
 }

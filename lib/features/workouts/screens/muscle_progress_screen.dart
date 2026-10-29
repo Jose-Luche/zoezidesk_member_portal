@@ -3,18 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/repositories/workouts_repository.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../../shared/widgets/sync_status.dart';
 import '../../../shared/widgets/weekly_bars.dart';
 import '../state/workouts_providers.dart';
 import '../workout_format.dart';
-import 'progress_screen.dart' show muscleTone;
+import 'progress_screen.dart' show muscleIcon, muscleTone;
 
 final _n = NumberFormat('#,##0', 'en_KE');
 
@@ -56,7 +59,7 @@ class _MuscleProgressScreenState extends ConsumerState<MuscleProgressScreen> {
           : const SkeletonList(),
       AsyncData(value: final c?) => ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpace.md),
+          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.lg),
           children: [
             SyncStatus(
               fetchedAt: c.fetchedAt,
@@ -65,7 +68,7 @@ class _MuscleProgressScreenState extends ConsumerState<MuscleProgressScreen> {
               refreshError: refresh.error,
               onRetry: controller.refresh,
             ),
-            const SizedBox(height: AppSpace.sm),
+            const SizedBox(height: AppSpace.md),
             ..._content(context, c.data),
           ],
         ),
@@ -75,7 +78,7 @@ class _MuscleProgressScreenState extends ConsumerState<MuscleProgressScreen> {
     };
 
     return Scaffold(
-      appBar: AppBar(title: Text(label)),
+      appBar: AppTopBar(title: label),
       body: RefreshIndicator(onRefresh: controller.refresh, child: body),
     );
   }
@@ -87,8 +90,9 @@ class _MuscleProgressScreenState extends ConsumerState<MuscleProgressScreen> {
 
     return [
       Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppBadge(label: m.statusLabel, tone: muscleTone(m.status)),
+          AppBadge(label: m.statusLabel, tone: muscleTone(m.status), icon: muscleIcon(m.status)),
           const SizedBox(width: AppSpace.sm),
           Expanded(
             child: Text(
@@ -102,10 +106,10 @@ class _MuscleProgressScreenState extends ConsumerState<MuscleProgressScreen> {
           ),
         ],
       ),
-      const SizedBox(height: AppSpace.md),
+      const SizedBox(height: AppSpace.lg),
       if (d.exercises.isEmpty)
         const StateMessage(
-          icon: Icons.fitness_center_rounded,
+          icon: AppIcons.dumbbell,
           title: 'Not trained in the last 12 weeks',
           message: 'Log a workout with these exercises and the charts fill in.',
         )
@@ -118,8 +122,7 @@ class _MuscleProgressScreenState extends ConsumerState<MuscleProgressScreen> {
           format: (v) => '${_n.format(v)} kg',
         ),
         const SizedBox(height: AppSpace.lg),
-        Text('Exercises', style: text.titleMedium),
-        const SizedBox(height: AppSpace.sm),
+        const SectionHeader('Exercises'),
         Wrap(
           spacing: AppSpace.sm,
           runSpacing: AppSpace.sm,
@@ -134,24 +137,22 @@ class _MuscleProgressScreenState extends ConsumerState<MuscleProgressScreen> {
         ),
         if (selected != null) ...[
           const SizedBox(height: AppSpace.md),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpace.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(selected.name, style: text.titleSmall),
-                  Text(
-                    [
-                      'Best set ${selected.bestSet}',
-                      if (selected.bestE1rm != null) 'est. 1RM ${formatKg(selected.bestE1rm!)}',
-                      plural(selected.sessions, 'workout'),
-                      if (selected.lastDate != null) 'last ${formatDate(selected.lastDate!)}',
-                    ].join(' · '),
-                    style: text.bodySmall,
-                  ),
-                ],
-              ),
+          SurfaceCard.tile(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(selected.name, style: text.titleMedium),
+                const SizedBox(height: 2),
+                Text(
+                  [
+                    'Best set ${selected.bestSet}',
+                    if (selected.bestE1rm != null) 'est. 1RM ${formatKg(selected.bestE1rm!)}',
+                    plural(selected.sessions, 'workout'),
+                    if (selected.lastDate != null) 'last ${formatDate(selected.lastDate!)}',
+                  ].join(' · '),
+                  style: text.bodySmall,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpace.sm),
@@ -166,23 +167,20 @@ class _MuscleProgressScreenState extends ConsumerState<MuscleProgressScreen> {
       ],
       if (d.prs.isNotEmpty) ...[
         const SizedBox(height: AppSpace.lg),
-        Text('Recent records', style: text.titleMedium),
-        const SizedBox(height: AppSpace.sm),
-        Card(
-          child: Column(
-            children: [
-              for (final pr in d.prs)
-                ListTile(
-                  leading: const Icon(Icons.emoji_events_outlined),
-                  title: Text(pr.exercise, style: text.titleSmall),
-                  subtitle: Text(pr.description, style: text.bodySmall),
-                  trailing: pr.date == null ? null : Text(formatDate(pr.date!), style: text.bodySmall),
-                ),
-            ],
-          ),
+        const SectionHeader('Recent records'),
+        ListCard(
+          children: [
+            for (final pr in d.prs)
+              ListRow(
+                icon: AppIcons.trophy,
+                title: pr.exercise,
+                titleStyle: text.titleSmall,
+                subtitle: pr.description,
+                trailing: pr.date == null ? null : Text(formatDate(pr.date!), style: text.bodySmall),
+              ),
+          ],
         ),
       ],
-      const SizedBox(height: AppSpace.lg),
     ];
   }
 }
@@ -205,27 +203,21 @@ class _ChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.md, AppSpace.md, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(title, style: text.titleMedium),
-            Text(subtitle, style: text.bodySmall),
-            const SizedBox(height: AppSpace.md),
-            WeeklyBars(values: values, labels: labels, format: format, semanticTitle: title),
-            Theme(
-              data: Theme.of(context).copyWith(dividerColor: AppColors.transparent),
-              child: ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                title: Text('See the numbers', style: text.bodyMedium),
-                children: [WeeklyTable(values: values, labels: labels, format: format)],
-              ),
-            ),
-          ],
-        ),
+    return SurfaceCard(
+      padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.md + 2, AppSpace.gutter, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(title, style: text.titleMedium),
+          Text(subtitle, style: text.bodySmall),
+          const SizedBox(height: AppSpace.md),
+          WeeklyBars(values: values, labels: labels, format: format, semanticTitle: title),
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text('See the numbers', style: text.titleSmall?.copyWith(color: context.palette.accentText)),
+            children: [WeeklyTable(values: values, labels: labels, format: format)],
+          ),
+        ],
       ),
     );
   }

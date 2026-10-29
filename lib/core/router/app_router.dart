@@ -30,6 +30,8 @@ import '../../features/workouts/screens/records_screen.dart';
 import '../../features/workouts/screens/session_screen.dart';
 import '../../features/workouts/screens/workout_history_screen.dart';
 import '../../features/workouts/screens/workouts_hub_screen.dart';
+import '../theme/app_icons.dart';
+import '../theme/app_tokens.dart';
 import 'routes.dart';
 
 /// Guard rules, kept pure so they can be unit tested.
@@ -151,41 +153,90 @@ final routerProvider = Provider<GoRouter>((ref) {
   return router;
 });
 
-/// Bottom navigation. Tabs are added as their features land.
+/// The four tabs. Android gets a navigation bar with the active icon in an
+/// accent pill; iOS a tab bar with icon over label.
 class _AppShell extends StatelessWidget {
   const _AppShell({required this.shell});
 
   final StatefulNavigationShell shell;
 
+  static const _tabs = [
+    (AppIcons.house, 'Home'),
+    (AppIcons.calendar, 'Classes'),
+    (AppIcons.dumbbell, 'Workouts'),
+    (AppIcons.menu, 'More'),
+  ];
+
+  void _go(int i) => shell.goBranch(i, initialLocation: i == shell.currentIndex);
+
   @override
   Widget build(BuildContext context) {
+    final platform = Theme.of(context).platform;
+    final ios = platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     return Scaffold(
       body: shell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: shell.currentIndex,
-        onDestinationSelected: (i) =>
-            shell.goBranch(i, initialLocation: i == shell.currentIndex),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+      bottomNavigationBar: ios
+          ? _IosTabBar(tabs: _tabs, index: shell.currentIndex, onTap: _go)
+          : NavigationBar(
+              selectedIndex: shell.currentIndex,
+              onDestinationSelected: _go,
+              destinations: [
+                for (final (icon, label) in _tabs)
+                  NavigationDestination(icon: AppIcon(icon), label: label),
+              ],
+            ),
+    );
+  }
+}
+
+class _IosTabBar extends StatelessWidget {
+  const _IosTabBar({required this.tabs, required this.index, required this.onTap});
+
+  final List<(LucideIcon, String)> tabs;
+  final int index;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final active = dark ? AppColors.accent400 : AppColors.accent700;
+    final label = Theme.of(context).textTheme.labelSmall;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: dark ? p.surface : AppColors.neutral100,
+        border: Border(top: BorderSide(color: p.border)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 56,
+          child: Row(
+            children: [
+              for (final (i, (icon, text)) in tabs.indexed)
+                Expanded(
+                  child: Semantics(
+                    button: true,
+                    selected: i == index,
+                    label: text,
+                    excludeSemantics: true,
+                    child: InkResponse(
+                      onTap: () => onTap(i),
+                      highlightShape: BoxShape.rectangle,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          AppIcon(icon, color: i == index ? active : p.textMuted),
+                          const SizedBox(height: 3),
+                          Text(text, style: label?.copyWith(color: i == index ? active : p.textMuted)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: 'Classes',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.fitness_center_outlined),
-            selectedIcon: Icon(Icons.fitness_center_rounded),
-            label: 'Workouts',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_rounded),
-            label: 'More',
-          ),
-        ],
+        ),
       ),
     );
   }

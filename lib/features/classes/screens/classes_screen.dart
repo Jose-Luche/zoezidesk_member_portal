@@ -8,14 +8,19 @@ import 'package:intl/intl.dart';
 
 import '../../../core/errors/app_failure.dart';
 import '../../../core/sync/outbox_service.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../data/db/app_database.dart';
 import '../../../data/repositories/classes_repository.dart';
 import '../../../data/sync/sync.dart';
+import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_sheet.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../../shared/widgets/sync_status.dart';
 import '../state/classes_providers.dart';
 import '../widgets/class_card.dart';
@@ -88,41 +93,32 @@ class _ClassesScreenState extends ConsumerState<ClassesScreen> with WidgetsBindi
   Future<void> _confirm(ClassSession c, {required bool booking}) async {
     final text = Theme.of(context).textTheme;
     final when = '${DateFormat('EEE d MMM').format(c.startsAt.toLocal())}, ${classTimeRange(c)}';
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      useRootNavigator: true, // cover the tab bar too
-      isScrollControlled: true,
-      // Scrolls when a long description or large text size needs more room.
-      builder: (sheet) => SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(AppSpace.md, 0, AppSpace.md, AppSpace.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(booking ? 'Book ${c.className}?' : 'Cancel ${c.className}?', style: text.headlineSmall),
+    final ok = await showAppSheet<bool>(
+      context,
+      builder: (sheet) => SheetLayout(
+        title: booking ? 'Book ${c.className}?' : 'Cancel ${c.className}?',
+        body: [
+          Text(when, style: text.titleSmall?.copyWith(color: sheet.palette.accentText)),
+          if (c.instructor != null) Text('With ${c.instructor}', style: text.bodyMedium),
+          if (c.description != null) ...[
             const SizedBox(height: AppSpace.sm),
-            Text(when, style: text.bodyLarge),
-            if (c.instructor != null) Text('With ${c.instructor}', style: text.bodySmall),
-            if (c.description != null) ...[
-              const SizedBox(height: AppSpace.sm),
-              Text(c.description!, style: text.bodyMedium),
-            ],
-            if (!booking) ...[
-              const SizedBox(height: AppSpace.sm),
-              Text('You can cancel until the class starts.', style: text.bodySmall),
-            ],
-            const SizedBox(height: AppSpace.lg),
-            FilledButton(
-              onPressed: () => Navigator.pop(sheet, true),
-              child: Text(booking ? 'Book class' : 'Cancel booking'),
-            ),
-            const SizedBox(height: AppSpace.sm),
-            OutlinedButton(
-              onPressed: () => Navigator.pop(sheet, false),
-              child: Text(booking ? 'Not now' : 'Keep booking'),
-            ),
+            Text(c.description!, style: text.bodyLarge),
           ],
-        ),
+          if (!booking) ...[
+            const SizedBox(height: AppSpace.md),
+            const InfoBanner(icon: AppIcons.clock, message: 'You can cancel until the class starts.'),
+          ],
+        ],
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(sheet, true),
+            child: Text(booking ? 'Book class' : 'Cancel booking'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(sheet, false),
+            child: Text(booking ? 'Not now' : 'Keep booking'),
+          ),
+        ],
       ),
     );
     if (ok != true) return;
@@ -174,7 +170,8 @@ class _ClassesScreenState extends ConsumerState<ClassesScreen> with WidgetsBindi
             if (pending > 0) ...[
               const SizedBox(height: AppSpace.sm),
               InfoBanner(
-                icon: Icons.sync_rounded,
+                tone: BadgeTone.warning,
+                icon: AppIcons.refreshCw,
                 message: pending == 1
                     ? '1 change is waiting to be sent.'
                     : '$pending changes are waiting to be sent.',
@@ -197,7 +194,7 @@ class _ClassesScreenState extends ConsumerState<ClassesScreen> with WidgetsBindi
       );
     }
 
-    return Scaffold(appBar: AppBar(title: const Text('Classes')), body: body);
+    return Scaffold(appBar: const AppTopBar(title: 'Classes', back: false), body: body);
   }
 }
 
@@ -252,10 +249,10 @@ class _Timetable extends StatelessWidget {
         slivers: [
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 76,
+              height: 76 + AppSpace.md,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
+                padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.xs, AppSpace.gutter, 12),
                 itemCount: days.length,
                 separatorBuilder: (_, _) => const SizedBox(width: AppSpace.sm),
                 itemBuilder: (_, i) => _DayChip(
@@ -268,32 +265,28 @@ class _Timetable extends StatelessWidget {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
             sliver: SliverList.list(children: [
               Align(
                 alignment: Alignment.centerLeft,
                 child: FilterChip(
-                  label: const Text('My bookings'),
+                  label: const Text('My bookings', maxLines: 1, softWrap: false),
                   selected: mineOnly,
                   onSelected: onMineOnly,
                 ),
               ),
-              const SizedBox(height: AppSpace.sm),
+              const SizedBox(height: AppSpace.md),
               header,
               if (offline) ...[
                 const SizedBox(height: AppSpace.sm),
                 const InfoBanner(
-                  icon: Icons.cloud_off_rounded,
+                  icon: AppIcons.cloudOff,
                   message: 'Live spot counts need a connection. You can still book: '
                       'it is sent when you are back online.',
                 ),
               ],
-              const SizedBox(height: AppSpace.md),
-              Text(
-                mineOnly ? 'My bookings' : DateFormat('EEEE d MMMM').format(day),
-                style: text.titleLarge,
-              ),
-              const SizedBox(height: AppSpace.sm),
+              const SizedBox(height: AppSpace.lg),
+              SectionHeader(mineOnly ? 'My bookings' : DateFormat('EEEE d MMMM').format(day)),
             ]),
           ),
           if (shown.isEmpty)
@@ -308,7 +301,7 @@ class _Timetable extends StatelessWidget {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(AppSpace.md, 0, AppSpace.md, AppSpace.lg),
+              padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter, AppSpace.lg),
               sliver: SliverList.builder(
                 itemCount: shown.length,
                 itemBuilder: (_, i) {
@@ -322,8 +315,8 @@ class _Timetable extends StatelessWidget {
                               startOfDay(shown[i - 1].startsAt.toLocal()) !=
                                   startOfDay(c.startsAt.toLocal())))
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
-                          child: Text(DateFormat('EEE d MMM').format(c.startsAt.toLocal()), style: text.titleSmall),
+                          padding: EdgeInsets.only(top: i == 0 ? 0 : AppSpace.sm, bottom: AppSpace.sm),
+                          child: Text(DateFormat('EEEE d MMM').format(c.startsAt.toLocal()), style: text.titleMedium),
                         ),
                       ClassCard(
                         session: c,
@@ -364,39 +357,40 @@ class _DayChip extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final label = '${DateFormat('EEEE d MMMM').format(day)}${hasBooking ? ', you have a booking' : ''}';
+    // Ink on the accent, never cream: cream on terracotta is only 3:1.
+    final fg = selected ? scheme.onPrimary : p.text;
     return Semantics(
       button: true,
       selected: selected,
       label: label,
       excludeSemantics: true,
-      child: Material(
-        color: selected ? scheme.primary : p.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          side: BorderSide(color: selected ? scheme.primary : p.border),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          child: SizedBox(
-            width: AppSpace.xxl + AppSpace.sm,
+      child: AnimatedContainer(
+        duration: AppMotion.fast,
+        curve: AppMotion.curve,
+        width: 54,
+        decoration: ShapeDecoration(color: selected ? scheme.primary : p.surface, shape: const StadiumBorder()),
+        child: Material(
+          type: MaterialType.transparency,
+          shape: const StadiumBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   DateFormat('EEE').format(day),
-                  style: text.labelMedium?.copyWith(color: selected ? scheme.onPrimary : p.textMuted),
+                  style: text.labelMedium?.copyWith(color: selected ? fg : p.textMuted),
                 ),
-                Text(
-                  '${day.day}',
-                  style: text.titleMedium?.copyWith(color: selected ? scheme.onPrimary : p.text),
-                ),
+                const SizedBox(height: 2),
+                Text('${day.day}', style: text.titleMedium?.copyWith(color: fg)),
+                const SizedBox(height: AppSpace.xs),
                 Container(
-                  width: AppSpace.xs + 2,
-                  height: AppSpace.xs + 2,
+                  width: 6,
+                  height: 6,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: hasBooking ? (selected ? scheme.onPrimary : p.accentText) : AppColors.transparent,
+                    color: hasBooking ? (selected ? fg : p.accentText) : AppColors.transparent,
                   ),
                 ),
               ],
@@ -407,4 +401,3 @@ class _DayChip extends StatelessWidget {
     );
   }
 }
-

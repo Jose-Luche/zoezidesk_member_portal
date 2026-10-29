@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/theme/theme_mode_controller.dart';
 import '../../shared/widgets/app_badge.dart';
+import '../../shared/widgets/app_sheet.dart';
+import '../../shared/widgets/app_top_bar.dart';
+import '../../shared/widgets/info_banner.dart';
 import '../../shared/widgets/skeleton.dart';
 import '../../shared/widgets/state_message.dart';
+import '../../shared/widgets/surfaces.dart';
 
-/// Review screen for the design system. Shown as the home screen until the
-/// login feature lands, then kept as a debug-only route.
+/// Debug-only review screen for the design system (see design.md).
 class DesignGalleryScreen extends StatelessWidget {
   const DesignGalleryScreen({super.key});
 
@@ -16,115 +20,110 @@ class DesignGalleryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Design system'),
-        actions: const [_ThemeToggle()],
-      ),
+      appBar: const AppTopBar(title: 'Design system', actions: [_ThemeToggle()]),
       body: ListView(
-        padding: const EdgeInsets.all(AppSpace.md),
+        padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.xxl),
         children: [
-          const _Section('Typography'),
-          Text('Display small', style: text.displaySmall),
-          Text('Headline medium', style: text.headlineMedium),
-          Text('Title large', style: text.titleLarge),
-          Text('Title medium', style: text.titleMedium),
-          Text('Body large 18sp', style: text.bodyLarge),
-          Text('Body medium 16sp, the default body size.', style: text.bodyMedium),
-          Text('Body small 16sp, muted', style: text.bodySmall),
-          const _Section('Buttons'),
+          const SectionHeader('Typography'),
+          Text('Headline large 30', style: text.headlineLarge),
+          Text('Headline small 23', style: text.headlineSmall),
+          Text('Title large 21', style: text.titleLarge),
+          Text('Title medium, Figtree 700', style: text.titleMedium),
+          Text('Title small 600, in the accent', style: text.titleSmall?.copyWith(color: context.palette.accentText)),
+          Text('Body medium 15, the default body size.', style: text.bodyMedium),
+          Text('Body small 13, muted', style: text.bodySmall),
+          const SizedBox(height: AppSpace.lg),
+          const SectionHeader('Buttons'),
           FilledButton(onPressed: () {}, child: const Text('Book class')),
           const SizedBox(height: AppSpace.sm),
           OutlinedButton(onPressed: () {}, child: const Text('View schedule')),
           const SizedBox(height: AppSpace.sm),
-          TextButton(onPressed: () {}, child: const Text('See all payments')),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(onPressed: () {}, child: const Text('See all payments')),
+          ),
           const SizedBox(height: AppSpace.sm),
           const FilledButton(onPressed: null, child: Text('Disabled')),
-          const _Section('Badges'),
+          const SizedBox(height: AppSpace.lg),
+          const SectionHeader('Badges and chips'),
           const Wrap(
             spacing: AppSpace.sm,
             runSpacing: AppSpace.sm,
             children: [
-              AppBadge(label: '5 day streak', icon: Icons.local_fire_department_rounded),
-              AppBadge(label: 'Active', tone: BadgeTone.success),
-              AppBadge(label: 'Expires in 3 days', tone: BadgeTone.warning),
-              AppBadge(label: 'Failed', tone: BadgeTone.danger),
-              AppBadge(label: 'Pending', tone: BadgeTone.neutral, icon: Icons.schedule_rounded),
+              AppBadge(label: 'Booked', tone: BadgeTone.success, icon: AppIcons.circleCheck),
+              AppBadge(label: '9 this month', icon: AppIcons.calendar),
+              AppBadge(label: 'Pending', tone: BadgeTone.neutral, icon: AppIcons.clock),
+              AppBadge(label: 'Failed', tone: BadgeTone.danger, icon: AppIcons.circleAlert),
             ],
           ),
-          const _Section('Inputs'),
-          const TextField(
-            decoration: InputDecoration(
-              labelText: 'Phone number',
-              hintText: '0712 345 678',
-              prefixIcon: Icon(Icons.phone_rounded),
+          const SizedBox(height: AppSpace.md),
+          Wrap(
+            spacing: AppSpace.sm,
+            runSpacing: AppSpace.sm,
+            children: [
+              FilterChip(label: const Text('My bookings'), selected: true, onSelected: (_) {}),
+              FilterChip(label: const Text('Chest'), selected: false, onSelected: (_) {}),
+            ],
+          ),
+          const SizedBox(height: AppSpace.lg),
+          const SectionHeader('Banners'),
+          const InfoBanner(icon: AppIcons.scanLine, message: 'Show this code at the front desk.'),
+          const SizedBox(height: AppSpace.sm),
+          const InfoBanner(tone: BadgeTone.warning, icon: AppIcons.refreshCw, message: '1 change is waiting to be sent.'),
+          const SizedBox(height: AppSpace.sm),
+          const InfoBanner(tone: BadgeTone.success, message: 'Checked in at 6:02 PM.'),
+          const SizedBox(height: AppSpace.sm),
+          InfoBanner(
+            tone: BadgeTone.danger,
+            message: 'Your membership has expired.',
+            actionLabel: 'Renew',
+            onAction: () {},
+          ),
+          const SizedBox(height: AppSpace.lg),
+          const SectionHeader('Inputs'),
+          const LabeledField(
+            label: 'Phone number',
+            child: TextField(
+              decoration: InputDecoration(hintText: '0712 345 678', prefixIcon: FieldIcon(AppIcons.phone)),
             ),
           ),
           const SizedBox(height: AppSpace.md),
-          const TextField(
-            decoration: InputDecoration(
-              labelText: 'Code',
-              errorText: 'The code must be 6 digits.',
-            ),
+          const LabeledField(
+            label: 'Code',
+            child: TextField(decoration: InputDecoration(errorText: 'The code must be 6 digits.')),
           ),
-          const _Section('Card'),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.fitness_center_rounded),
-              title: const Text('HIIT Blast'),
-              subtitle: const Text('Mon 6:00 PM · 4 spots left'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {},
-            ),
+          const SizedBox(height: AppSpace.lg),
+          const SectionHeader('List card'),
+          ListCard(
+            children: [
+              ListRow(icon: AppIcons.dumbbell, title: 'HIIT Blast', subtitle: 'Mon 6:00 PM · 4 spots left', onTap: () {}),
+              ListRow(icon: AppIcons.receipt, title: 'Payments', onTap: () {}),
+            ],
           ),
-          const _Section('Skeleton'),
+          const SizedBox(height: AppSpace.lg),
+          const SectionHeader('Skeleton'),
           const SkeletonListTile(),
-          const _Section('States'),
-          Card(
-            child: StateMessage.offline(onAction: () {}),
-          ),
-          const _Section('Bottom sheet'),
+          const SizedBox(height: AppSpace.lg),
+          const SectionHeader('States'),
+          SurfaceCard(padding: EdgeInsets.zero, child: StateMessage.offline(onAction: () {})),
+          const SizedBox(height: AppSpace.lg),
+          const SectionHeader('Bottom sheet'),
           OutlinedButton(
-            onPressed: () => showModalBottomSheet<void>(
-              context: context,
-              builder: (_) => Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpace.md, 0, AppSpace.md, AppSpace.lg,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('Confirm booking', style: text.headlineSmall),
-                    const SizedBox(height: AppSpace.sm),
-                    Text('HIIT Blast, Monday 6:00 PM', style: text.bodyMedium),
-                    const SizedBox(height: AppSpace.lg),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Confirm'),
-                    ),
-                  ],
-                ),
+            onPressed: () => showAppSheet<void>(
+              context,
+              builder: (sheet) => SheetLayout(
+                title: 'Confirm booking',
+                body: [Text('HIIT Blast, Monday 6:00 PM', style: Theme.of(sheet).textTheme.bodyLarge)],
+                actions: [
+                  FilledButton(onPressed: () => Navigator.pop(sheet), child: const Text('Confirm')),
+                  OutlinedButton(onPressed: () => Navigator.pop(sheet), child: const Text('Not now')),
+                ],
               ),
             ),
             child: const Text('Open bottom sheet'),
           ),
-          const SizedBox(height: AppSpace.xxl),
         ],
       ),
-    );
-  }
-}
-
-class _Section extends StatelessWidget {
-  const _Section(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpace.lg, bottom: AppSpace.sm),
-      child: Text(title, style: Theme.of(context).textTheme.titleLarge),
     );
   }
 }
@@ -134,10 +133,10 @@ class _ThemeToggle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return IconButton(
       tooltip: isDark ? 'Switch to light theme' : 'Switch to dark theme',
-      icon: Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
+      icon: AppIcon(isDark ? AppIcons.sun : AppIcons.moon),
       onPressed: () => ref
           .read(themeModeProvider.notifier)
           .set(isDark ? ThemeMode.light : ThemeMode.dark),

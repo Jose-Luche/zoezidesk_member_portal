@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
 import '../../../shared/widgets/sync_status.dart';
@@ -54,7 +56,7 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
       content = fetchedAt == null && state.refresh.error is NetworkFailure
           ? StateMessage.offline(message: 'Connect to see your past workouts.', onAction: controller.refresh)
           : const StateMessage(
-              icon: Icons.fitness_center_rounded,
+              icon: AppIcons.dumbbell,
               title: 'No workouts yet',
               message: 'Start one from the Workouts tab. Finished workouts appear here.',
             );
@@ -71,13 +73,13 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout history')),
+      appBar: const AppTopBar(title: 'Workout history'),
       body: RefreshIndicator(
         onRefresh: controller.refresh,
         child: ListView(
           controller: _scroll,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpace.md),
+          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.lg),
           children: [
             if (fetchedAt != null) ...[
               SyncStatus(
@@ -87,7 +89,7 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
                 refreshError: state.refresh.error,
                 onRetry: controller.refresh,
               ),
-              const SizedBox(height: AppSpace.sm),
+              const SizedBox(height: AppSpace.md),
             ],
             content,
           ],

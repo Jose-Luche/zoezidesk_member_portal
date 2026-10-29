@@ -4,15 +4,18 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/db/encrypted_cache.dart';
 import '../../../data/dto/profile_dto.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../../shared/widgets/sync_status.dart';
 import '../state/profile_providers.dart';
 import '../widgets/member_avatar.dart';
@@ -61,13 +64,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
+      appBar: AppTopBar(
+        title: 'Profile',
         actions: [
           if (cached != null)
             IconButton(
               tooltip: 'Edit profile',
-              icon: const Icon(Icons.edit_rounded),
+              icon: const AppIcon(AppIcons.pencil),
               onPressed: () => context.push(Routes.editProfile),
             ),
         ],
@@ -115,7 +118,7 @@ class _ProfileContent extends StatelessWidget {
       onRefresh: onRefresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(AppSpace.md),
+        padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.lg),
         children: [
           SyncStatus(
             fetchedAt: cached.fetchedAt,
@@ -134,8 +137,8 @@ class _ProfileContent extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(m.name, style: text.headlineMedium),
-                    if (m.memberNumber != null) Text(m.memberNumber!, style: text.bodySmall),
-                    const SizedBox(height: AppSpace.xs),
+                    if (m.memberNumber != null) Text(m.memberNumber!, style: text.bodyMedium?.copyWith(color: context.palette.textMuted)),
+                    const SizedBox(height: AppSpace.sm),
                     _MemberStatusBadge(status: m.status),
                   ],
                 ),
@@ -144,17 +147,17 @@ class _ProfileContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSpace.lg),
           _Section(title: 'Contact', rows: [
-            _Row(Icons.phone_rounded, 'Phone', m.phone),
-            _Row(Icons.mail_rounded, 'Email', m.email),
+            _Row(AppIcons.phone, 'Phone', m.phone),
+            _Row(AppIcons.mail, 'Email', m.email),
           ]),
           _Section(title: 'Personal', rows: [
-            _Row(Icons.cake_rounded, 'Date of birth', date(m.dateOfBirth)),
-            _Row(Icons.person_rounded, 'Gender', gender),
-            _Row(Icons.calendar_today_rounded, 'Member since', date(m.memberSince)),
+            _Row(AppIcons.cake, 'Date of birth', date(m.dateOfBirth)),
+            _Row(AppIcons.user, 'Gender', gender),
+            _Row(AppIcons.calendarDays, 'Member since', date(m.memberSince)),
           ]),
           _Section(title: 'Emergency contact', rows: [
-            _Row(Icons.contact_emergency_rounded, 'Name', m.emergencyContactName),
-            _Row(Icons.phone_in_talk_rounded, 'Phone', m.emergencyContactPhone),
+            _Row(AppIcons.contact, 'Name', m.emergencyContactName),
+            _Row(AppIcons.phoneCall, 'Phone', m.emergencyContactPhone),
           ]),
           if (profile.memberships.isNotEmpty)
             _Section(
@@ -163,19 +166,18 @@ class _ProfileContent extends StatelessWidget {
             ),
           if (gym != null)
             _Section(title: gym.name, rows: [
-              _Row(Icons.phone_rounded, 'Phone', gym.phone),
-              _Row(Icons.mail_rounded, 'Email', gym.email),
+              _Row(AppIcons.phone, 'Phone', gym.phone),
+              _Row(AppIcons.mail, 'Email', gym.email),
               _Row(
-                Icons.place_rounded,
+                AppIcons.mapPin,
                 'Address',
                 [gym.address, gym.town].whereType<String>().where((s) => s.isNotEmpty).join(', '),
               ),
             ]),
           const InfoBanner(
             message: 'Name, phone number and photo can only be changed at the front desk.',
-            icon: Icons.storefront_rounded,
+            icon: AppIcons.store,
           ),
-          const SizedBox(height: AppSpace.lg),
         ],
       ),
     );
@@ -189,9 +191,9 @@ class _MemberStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => switch (status) {
-        'active' => const AppBadge(label: 'Active member', tone: BadgeTone.success),
-        'suspended' => const AppBadge(label: 'Suspended', tone: BadgeTone.danger),
-        'inactive' => const AppBadge(label: 'Inactive', tone: BadgeTone.neutral),
+        'active' => const AppBadge(label: 'Active member', tone: BadgeTone.success, icon: AppIcons.circleCheck),
+        'suspended' => const AppBadge(label: 'Suspended', tone: BadgeTone.danger, icon: AppIcons.circleAlert),
+        'inactive' => const AppBadge(label: 'Inactive', tone: BadgeTone.neutral, icon: AppIcons.clock),
         _ => const SizedBox.shrink(),
       };
 }
@@ -199,7 +201,7 @@ class _MemberStatusBadge extends StatelessWidget {
 class _Row {
   const _Row(this.icon, this.label, this.value);
 
-  final IconData icon;
+  final LucideIcon icon;
   final String label;
   final String? value;
 }
@@ -218,26 +220,23 @@ class _Section extends StatelessWidget {
     if (visible.isEmpty && children.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpace.md),
+      padding: const EdgeInsets.only(bottom: AppSpace.lg),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpace.sm),
-            child: Text(title, style: text.titleLarge),
-          ),
-          Card(
-            child: Column(
-              children: [
-                for (final r in visible)
-                  ListTile(
-                    leading: Icon(r.icon),
-                    title: Text(r.label, style: text.bodySmall),
-                    subtitle: SelectableText(r.value!, style: text.bodyLarge),
-                  ),
-                ...children,
-              ],
-            ),
+          SectionHeader(title),
+          ListCard(
+            children: [
+              for (final r in visible)
+                ListRow(
+                  icon: r.icon,
+                  title: r.label,
+                  titleStyle: text.bodySmall,
+                  subtitle: r.value,
+                  selectableSubtitle: true,
+                ),
+              ...children,
+            ],
           ),
         ],
       ),
@@ -257,20 +256,22 @@ class _MembershipRow extends StatelessWidget {
     final end = DateTime.tryParse(record.expiresAtIso);
     final range = [start, end].whereType<DateTime>().map(formatDate).join(' – ');
 
-    final (label, tone) = switch (record.status) {
-      'active' when !record.lapsed => ('Active', BadgeTone.success),
-      'active' || 'expired' => ('Expired', BadgeTone.neutral),
-      'pending' => ('Pending', BadgeTone.warning),
-      'suspended' => ('Suspended', BadgeTone.danger),
-      'cancelled' => ('Cancelled', BadgeTone.neutral),
-      _ => (record.status ?? '', BadgeTone.neutral),
+    final (label, tone, icon) = switch (record.status) {
+      'active' when !record.lapsed => ('Active', BadgeTone.success, AppIcons.circleCheck),
+      'active' || 'expired' => ('Expired', BadgeTone.neutral, AppIcons.clock),
+      'pending' => ('Pending', BadgeTone.warning, AppIcons.clock),
+      'suspended' => ('Suspended', BadgeTone.danger, AppIcons.circleAlert),
+      'cancelled' => ('Cancelled', BadgeTone.neutral, AppIcons.x),
+      _ => (record.status ?? '', BadgeTone.neutral, AppIcons.info),
     };
 
-    return ListTile(
-      leading: const Icon(Icons.card_membership_rounded),
-      title: Text(record.planName ?? 'Membership', style: text.titleSmall),
-      subtitle: Text(range, style: text.bodySmall),
-      trailing: label.isEmpty ? null : AppBadge(label: label, tone: tone),
+    return ListRow(
+      icon: AppIcons.idCard,
+      iconColor: context.palette.rowIcon,
+      title: record.planName ?? 'Membership',
+      titleStyle: text.titleSmall,
+      subtitle: range,
+      trailing: label.isEmpty ? null : AppBadge(label: label, tone: tone, icon: icon),
     );
   }
 }
@@ -284,7 +285,7 @@ class _ProfileSkeleton extends StatelessWidget {
       label: 'Loading profile',
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(AppSpace.md),
+        padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.md),
         children: const [
           SizedBox(height: AppSpace.lg),
           Row(

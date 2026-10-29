@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zoezidesk_member/shared/widgets/surfaces.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:zoezidesk_member/app.dart';
 import 'package:zoezidesk_member/core/errors/app_failure.dart';
@@ -96,7 +97,11 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    Finder field(String label) => find.widgetWithText(TextFormField, label);
+    // Labels sit above the fields (LabeledField), not inside them.
+    Finder field(String label) => find.descendant(
+          of: find.widgetWithText(LabeledField, label),
+          matching: find.byType(TextFormField),
+        );
 
     Future<void> tapSave(WidgetTester tester) async {
       final save = find.text('Save changes');

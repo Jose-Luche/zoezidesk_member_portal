@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../state/otp_controllers.dart';
 import '../state/session_controller.dart';
 import '../widgets/auth_scaffold.dart';
@@ -57,20 +59,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               FormErrorText(reason),
               const SizedBox(height: AppSpace.md),
             ],
-            TextFormField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              autofillHints: const [AutofillHints.telephoneNumber],
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'Phone number',
-                hintText: '0712 345 678',
-                prefixIcon: Icon(Icons.phone_rounded),
+            LabeledField(
+              label: 'Phone number',
+              child: TextFormField(
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                autofillHints: const [AutofillHints.telephoneNumber],
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(
+                  hintText: '0712 345 678',
+                  prefixIcon: FieldIcon(AppIcons.phone),
+                ),
+                validator: (v) => v == null || !isPlausiblePhone(v)
+                    ? 'Enter a valid phone number.'
+                    : null,
+                onFieldSubmitted: (_) => _submit(),
               ),
-              validator: (v) => v == null || !isPlausiblePhone(v)
-                  ? 'Enter a valid phone number.'
-                  : null,
-              onFieldSubmitted: (_) => _submit(),
             ),
             if (error is AppFailure) ...[
               const SizedBox(height: AppSpace.md),
@@ -78,6 +82,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ],
             const SizedBox(height: AppSpace.lg),
             FilledButton(
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(AppSizes.sheetButton)),
               onPressed: request.isLoading ? null : _submit,
               child: Text(request.isLoading ? 'Sending code…' : 'Send code'),
             ),

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/formatters.dart';
 import '../state/membership_status.dart';
 
-/// Gradient membership card. Compact on the dashboard (hero element) and
-/// [expanded] on the full-screen card, sharing a Hero tag between the two.
-/// The QR encodes the exact `qr_code` string the front-desk scanner matches.
+/// The membership card: a solid sage fill with a soft circle bleeding off
+/// one corner. Compact on the dashboard (hero element) and [expanded] on
+/// the full-screen card, sharing a Hero tag between the two. The QR encodes
+/// the exact `qr_code` string the front-desk scanner matches.
 class MembershipCard extends StatelessWidget {
   const MembershipCard({
     super.key,
@@ -21,6 +23,7 @@ class MembershipCard extends StatelessWidget {
   });
 
   static const heroTag = 'membership-card';
+  static const _decorSize = 210.0;
 
   final String name;
   final MembershipStatus status;
@@ -34,20 +37,21 @@ class MembershipCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     final text = Theme.of(context).textTheme;
-    final on = p.onCardGradient;
-    final radius = BorderRadius.circular(AppRadius.card);
+    final on = p.onCard;
+    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.hero));
 
     final header = Row(
       children: [
         Expanded(
           child: Text(
             gymName ?? 'ZoeziDesk',
-            style: text.labelLarge?.copyWith(color: on),
+            style: text.titleSmall?.copyWith(color: on, fontSize: 14),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        _StatusChip(status: status, color: on),
+        const SizedBox(width: AppSpace.sm),
+        _StatusChip(status: status),
       ],
     );
     final details = _Details(name: name, memberNumber: memberNumber, status: status, color: on);
@@ -55,12 +59,12 @@ class MembershipCard extends StatelessWidget {
         ? Semantics(
             label: '${status.expiryPercent}% of membership used',
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.control),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
               child: LinearProgressIndicator(
                 value: status.expiryPercent! / 100,
-                minHeight: AppSpace.sm,
+                minHeight: 8,
                 color: on,
-                backgroundColor: on.withValues(alpha: 0.2),
+                backgroundColor: p.cardDecor,
               ),
             ),
           )
@@ -86,33 +90,46 @@ class MembershipCard extends StatelessWidget {
                 _QrTile(qrCode: qrCode, size: AppSizes.qrOnCard),
               ],
             ),
-            if (progress != null) ...[const SizedBox(height: AppSpace.md), progress],
+            if (progress != null) ...[const SizedBox(height: 18), progress],
           ];
+
+    // Top-right on the compact card, bottom-left on the full-screen one.
+    final decor = Positioned(
+      top: expanded ? null : -_decorSize * 0.42,
+      right: expanded ? null : -_decorSize * 0.34,
+      bottom: expanded ? -_decorSize * 0.42 : null,
+      left: expanded ? -_decorSize * 0.34 : null,
+      child: ExcludeSemantics(
+        child: Container(
+          width: _decorSize,
+          height: _decorSize,
+          decoration: BoxDecoration(color: p.cardDecor, shape: BoxShape.circle),
+        ),
+      ),
+    );
 
     return Hero(
       tag: heroTag,
       child: Material(
-        type: MaterialType.transparency,
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: p.cardGradient,
-            ),
-            borderRadius: radius,
-          ),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: radius,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpace.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: children,
+        color: p.cardFill,
+        shape: shape,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: shape,
+          highlightColor: AppColors.creamPressed,
+          child: Stack(
+            children: [
+              decor,
+              Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: children,
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -137,6 +154,7 @@ class _Details extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final expires = status.expiresOn;
+    final body = text.bodyMedium?.copyWith(color: color);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -146,25 +164,21 @@ class _Details extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        if (memberNumber != null)
-          Text(memberNumber!, style: text.bodyMedium?.copyWith(color: color)),
-        const SizedBox(height: AppSpace.md),
+        if (memberNumber != null) ...[
+          const SizedBox(height: 2),
+          Text(memberNumber!, style: body),
+        ],
+        const SizedBox(height: 14),
         if (status.state == MembershipState.none)
-          Text(
-            'Visit the front desk to get started',
-            style: text.bodyMedium?.copyWith(color: color),
-          )
+          Text('Visit the front desk to get started', style: body)
         else ...[
-          Text(
-            status.planName ?? 'Membership',
-            style: text.titleSmall?.copyWith(color: color),
-          ),
+          Text(status.planName ?? 'Membership', style: text.titleSmall?.copyWith(color: color)),
           if (expires != null)
             Text(
               status.state == MembershipState.expired
                   ? 'Expired ${formatDate(expires)}'
                   : 'Valid until ${formatDate(expires)}',
-              style: text.bodyMedium?.copyWith(color: color),
+              style: body,
             ),
         ],
       ],
@@ -172,33 +186,35 @@ class _Details extends StatelessWidget {
   }
 }
 
+/// Outlined cream pill with an icon and words. Filled with the card color
+/// so it stays readable where it overlaps the decorative circle.
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status, required this.color});
+  const _StatusChip({required this.status});
 
   final MembershipStatus status;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final icon = switch (status.state) {
-      MembershipState.active => Icons.check_circle_rounded,
-      MembershipState.expiring => Icons.schedule_rounded,
-      MembershipState.expired || MembershipState.none => Icons.cancel_rounded,
+      MembershipState.active => AppIcons.circleCheck,
+      MembershipState.expiring => AppIcons.clock,
+      MembershipState.expired || MembershipState.none => AppIcons.circleAlert,
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
-      decoration: BoxDecoration(
-        border: Border.all(color: color),
-        borderRadius: BorderRadius.circular(AppRadius.control),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: ShapeDecoration(
+        color: p.cardFill,
+        shape: StadiumBorder(side: BorderSide(color: p.onCard, width: 1.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: AppSpace.md, color: color),
-          const SizedBox(width: AppSpace.xs),
+          AppIcon(icon, size: AppSizes.iconBadge, color: p.onCard),
+          const SizedBox(width: 5),
           Text(
             status.state == MembershipState.none ? 'Inactive' : status.label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: p.onCard),
           ),
         ],
       ),
@@ -215,16 +231,17 @@ class _QrTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
+    final large = size > AppSizes.qrOnCard;
     return Container(
       width: size,
       height: size,
-      padding: EdgeInsets.all(size > AppSizes.qrOnCard ? AppSpace.md : AppSpace.sm),
+      padding: EdgeInsets.all(large ? 12 : AppSpace.sm),
       decoration: BoxDecoration(
         color: p.qrBackground,
-        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderRadius: BorderRadius.circular(large ? AppSpace.lg : AppRadius.control),
       ),
       child: qrCode == null
-          ? Icon(Icons.qr_code_2_rounded, size: AppSpace.xxl, color: p.onCardGradient)
+          ? Center(child: AppIcon(AppIcons.qrCode, size: AppSpace.xxl * (large ? 1.5 : 0.75), color: p.qrInk))
           : Semantics(
               label: 'Membership QR code',
               image: true,
@@ -233,11 +250,8 @@ class _QrTile extends StatelessWidget {
                 errorCorrectionLevel: QrErrorCorrectLevel.H,
                 padding: EdgeInsets.zero,
                 // Scanners need dark modules on a light background.
-                eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: p.onCardGradient),
-                dataModuleStyle: QrDataModuleStyle(
-                  dataModuleShape: QrDataModuleShape.square,
-                  color: p.onCardGradient,
-                ),
+                eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: p.qrInk),
+                dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: p.qrInk),
               ),
             ),
     );

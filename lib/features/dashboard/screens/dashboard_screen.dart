@@ -4,14 +4,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/db/encrypted_cache.dart';
 import '../../../data/dto/dashboard_dto.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../../shared/widgets/sync_status.dart';
 import '../state/dashboard_providers.dart';
 import '../state/membership_status.dart';
@@ -83,12 +86,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
     final firstName = cached?.data.member.name.split(' ').first;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(firstName == null ? 'Home' : 'Hi, $firstName'),
+      appBar: AppTopBar(
+        back: false,
+        title: firstName == null ? 'Home' : 'Hi, $firstName',
         actions: [
           IconButton(
             tooltip: 'Profile',
-            icon: const Icon(Icons.account_circle_rounded),
+            icon: const AppIcon(AppIcons.circleUser),
             onPressed: () => context.push(Routes.profile),
           ),
         ],
@@ -119,17 +123,18 @@ class _DashboardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = cached.data;
     final status = MembershipStatus.from(data.membership);
-    final text = Theme.of(context).textTheme;
 
     final notice = switch (status.state) {
       MembershipState.expired => InfoBanner(
         tone: BadgeTone.danger,
+        icon: AppIcons.circleAlert,
         message: 'Your membership has expired. Renew in the app or at the front desk.',
         actionLabel: 'Renew',
         onAction: () => context.push(Routes.checkout),
       ),
       MembershipState.expiring => InfoBanner(
-        tone: BadgeTone.warning,
+        tone: BadgeTone.danger,
+        icon: AppIcons.clock,
         message: '${status.label}. Renew in the app or at the front desk.',
         actionLabel: 'Renew',
         onAction: () => context.push(Routes.checkout),
@@ -141,7 +146,7 @@ class _DashboardContent extends StatelessWidget {
       onRefresh: onRefresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(AppSpace.md),
+        padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.lg),
         children: [
           SyncStatus(
             fetchedAt: cached.fetchedAt,
@@ -168,7 +173,7 @@ class _DashboardContent extends StatelessWidget {
               children: [
                 Expanded(
                   child: StatTile(
-                    icon: Icons.event_available_rounded,
+                    icon: AppIcons.calendar,
                     value: '${data.attendanceMonth}',
                     label: 'Visits this month',
                   ),
@@ -176,7 +181,7 @@ class _DashboardContent extends StatelessWidget {
                 const SizedBox(width: AppSpace.sm),
                 Expanded(
                   child: StatTile(
-                    icon: Icons.hourglass_bottom_rounded,
+                    icon: AppIcons.hourglass,
                     value: status.state == MembershipState.none
                         ? '–'
                         : '${status.daysRemaining}',
@@ -186,7 +191,7 @@ class _DashboardContent extends StatelessWidget {
                 const SizedBox(width: AppSpace.sm),
                 Expanded(
                   child: StatTile(
-                    icon: Icons.account_balance_wallet_rounded,
+                    icon: AppIcons.wallet,
                     value: data.totalPaid == null
                         ? '–'
                         : formatKes(data.totalPaid!),
@@ -197,28 +202,27 @@ class _DashboardContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpace.lg),
-          Text('Quick actions', style: text.titleLarge),
-          const SizedBox(height: AppSpace.sm),
+          const SectionHeader('Quick actions'),
           QuickActionsGrid(
             actions: [
               QuickAction(
                 label: 'My card',
-                icon: Icons.qr_code_2_rounded,
+                icon: AppIcons.qrCode,
                 onTap: () => context.push(Routes.membershipCard),
               ),
               QuickAction(
                 label: 'Classes',
-                icon: Icons.calendar_month_rounded,
+                icon: AppIcons.calendar,
                 onTap: () => context.go(Routes.classes),
               ),
               QuickAction(
                 label: 'Check-in',
-                icon: Icons.how_to_reg_rounded,
+                icon: AppIcons.userCheck,
                 onTap: () => context.push(Routes.checkIn),
               ),
               QuickAction(
                 label: 'Payments',
-                icon: Icons.receipt_long_rounded,
+                icon: AppIcons.receipt,
                 onTap: () => context.push(Routes.payments),
               ),
             ],
@@ -228,7 +232,6 @@ class _DashboardContent extends StatelessWidget {
             payments: data.recentPayments,
             onSeeAll: () => context.push(Routes.payments),
           ),
-          const SizedBox(height: AppSpace.lg),
         ],
       ),
     );

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/brightness.dart';
+import '../../../shared/widgets/app_top_bar.dart';
+import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/state_message.dart';
 import '../../auth/state/session_controller.dart';
 import '../../dashboard/state/dashboard_providers.dart';
@@ -20,13 +23,12 @@ class MembershipCardScreen extends ConsumerWidget {
     final dashboard = ref.watch(dashboardCacheProvider).value?.data;
     final session = ref.watch(sessionControllerProvider);
     final signedIn = session is SignedIn ? session.member : null;
-    final text = Theme.of(context).textTheme;
 
     final name = dashboard?.member.name ?? card?.name ?? signedIn?.name;
 
     return BrightnessBoost(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Membership card')),
+        appBar: const AppTopBar(title: 'Membership card'),
         body: card == null || name == null
             ? StateMessage.offline(
                 title: 'Card not saved yet',
@@ -37,9 +39,10 @@ class MembershipCardScreen extends ConsumerWidget {
                 onAction: () => Navigator.of(context).maybePop(),
               )
             : SafeArea(
-                child: Center(
+                child: Align(
+                  alignment: Alignment.topCenter,
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppSpace.md),
+                    padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, AppSpace.lg),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 440),
                       child: Column(
@@ -57,25 +60,10 @@ class MembershipCardScreen extends ConsumerWidget {
                             ),
                             qrCode: card.qrCode,
                           ),
-                          const SizedBox(height: AppSpace.lg),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.qr_code_scanner_rounded,
-                                color: context.palette.textMuted,
-                              ),
-                              const SizedBox(width: AppSpace.sm),
-                              Flexible(
-                                child: Text(
-                                  'Show this code at the front desk to check in.',
-                                  style: text.bodyMedium?.copyWith(
-                                    color: context.palette.textMuted,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: AppSpace.md),
+                          const InfoBanner(
+                            icon: AppIcons.scanLine,
+                            message: 'Show this code at the front desk to check in.',
                           ),
                         ],
                       ),

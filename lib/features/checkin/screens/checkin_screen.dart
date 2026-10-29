@@ -4,15 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/brightness.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/db/app_database.dart';
 import '../../../shared/widgets/app_badge.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/info_banner.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/state_message.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../../shared/widgets/sync_status.dart';
 import '../../auth/state/session_controller.dart';
 import '../../dashboard/state/dashboard_providers.dart';
@@ -70,7 +73,6 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     final summary = ref.watch(attendanceSummaryProvider).value;
     final fetchedAt = ref.watch(attendanceFetchedAtProvider).value;
     final now = ref.watch(clockProvider)();
-    final text = Theme.of(context).textTheme;
 
     final name =
         dashboard?.member.name ??
@@ -84,7 +86,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
 
     return BrightnessBoost(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Check-in')),
+        appBar: const AppTopBar(title: 'Check-in'),
         body: RefreshIndicator(
           onRefresh: controller.refresh,
           child: CustomScrollView(
@@ -92,12 +94,12 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.all(AppSpace.md),
+                padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, 0),
                 sliver: SliverList.list(
                   children: [
                     if (card == null || name == null)
                       const StateMessage(
-                        icon: Icons.qr_code_2_rounded,
+                        icon: AppIcons.qrCode,
                         title: 'Code not saved yet',
                         message:
                             'Open the app once with an internet connection to save your '
@@ -117,40 +119,42 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     if (state.confirmedAt != null)
                       InfoBanner(
                         tone: BadgeTone.success,
-                        icon: Icons.check_circle_rounded,
+                        icon: AppIcons.circleCheck,
                         message:
                             'Checked in at ${DateFormat('h:mm a').format(state.confirmedAt!.toLocal())}. '
-                            'Have a great session!',
+                            'Have a good session.',
                       )
                     else if (dashboard != null && !canCheckIn)
                       const InfoBanner(
                         tone: BadgeTone.danger,
+                        icon: AppIcons.circleAlert,
                         message:
                             'Your membership is not active, so the front desk cannot check you in. '
                             'Visit the front desk to renew.',
                       )
                     else
                       InfoBanner(
-                        icon: Icons.qr_code_scanner_rounded,
+                        icon: AppIcons.scanLine,
                         message:
                             'Show this code at the front desk. You will see a confirmation here '
                             'when they scan it.',
                       ),
                     const SizedBox(height: AppSpace.lg),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text('Your visits', style: text.titleLarge),
-                        ),
+                        const Expanded(child: SectionHeader('Your visits')),
                         if (summary != null)
-                          AppBadge(
-                            label: '${summary.thisMonth} this month',
-                            tone: BadgeTone.highlight,
-                            icon: Icons.event_available_rounded,
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSpace.xs),
+                            child: AppBadge(
+                              label: '${summary.thisMonth} this month',
+                              tone: BadgeTone.highlight,
+                              icon: AppIcons.calendar,
+                            ),
                           ),
                       ],
                     ),
-                    const SizedBox(height: AppSpace.sm),
                     if (fetchedAt != null)
                       SyncStatus(
                         fetchedAt: fetchedAt,
@@ -177,7 +181,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     DateTime? fetchedAt,
     CheckInState state,
   ) {
-    const pad = EdgeInsets.symmetric(horizontal: AppSpace.md);
+    const pad = EdgeInsets.symmetric(horizontal: AppSpace.gutter);
     if (rows == null ||
         (rows.isEmpty && fetchedAt == null && !state.refresh.hasError)) {
       return const [
@@ -207,7 +211,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                       .refresh,
                 )
               : const StateMessage(
-                  icon: Icons.event_available_rounded,
+                  icon: AppIcons.calendar,
                   title: 'No visits yet',
                   message: 'Your check-ins appear here after the front desk scans your code.',
                 ),
@@ -224,28 +228,23 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
             final a = rows[i];
             final at = a.checkedInAt.toLocal();
             final manual = a.method == 'manual';
-            return Card(
-              margin: const EdgeInsets.only(bottom: AppSpace.sm),
-              child: ListTile(
-                leading: Icon(
-                  manual
-                      ? Icons.person_search_rounded
-                      : Icons.qr_code_scanner_rounded,
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpace.sm),
+              child: SurfaceCard.tile(
+                padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
+                child: ListRow(
+                  icon: manual ? AppIcons.userRoundSearch : AppIcons.scanLine,
+                  iconColor: context.palette.rowIcon,
+                  title: DateFormat('EEEE d MMMM').format(at),
+                  titleStyle: text.titleSmall,
+                  subtitle: '${DateFormat('h:mm a').format(at)} · ${manual ? 'Checked in by staff' : 'QR scan'}',
+                  trailing: i == 0
+                      ? Text(
+                          formatRelative(at, ref.read(clockProvider)()),
+                          style: text.bodySmall,
+                        )
+                      : null,
                 ),
-                title: Text(
-                  DateFormat('EEEE d MMMM').format(at),
-                  style: text.titleSmall,
-                ),
-                subtitle: Text(
-                  '${DateFormat('h:mm a').format(at)} · ${manual ? 'Checked in by staff' : 'QR scan'}',
-                  style: text.bodySmall,
-                ),
-                trailing: i == 0
-                    ? Text(
-                        formatRelative(at, ref.read(clockProvider)()),
-                        style: text.bodySmall,
-                      )
-                    : null,
               ),
             );
           },

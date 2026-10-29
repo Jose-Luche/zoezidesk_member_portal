@@ -139,8 +139,8 @@ void main() {
     expect(find.textContaining('Last trained 21 days ago'), findsOneWidget);
     await scrollTo(tester, find.text('Chest'));
     expect(find.textContaining('+3.4% strength'), findsOneWidget);
-    await scrollTo(tester, find.text('Not trained in the last 8 weeks'));
-    expect(find.text('Calves'), findsOneWidget);
+    await scrollTo(tester, find.textContaining('Not trained in the last 8 weeks'));
+    expect(find.text('Not trained in the last 8 weeks: Calves.'), findsOneWidget);
     await scrollTo(tester, find.text('Chest'));
 
     await tester.tap(find.text('Chest'));
